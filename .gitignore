@@ -1,0 +1,15 @@
+# Windows が勝手に作るファイル
+Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
+
+# macOS が勝手に作るファイル
+.DS_Store
+
+# エディタの一時ファイル
+*.swp
+*~
+
+# 書き出したデータ（個人情報が含まれることがあるので記録に残さない）
+*.csv
+設定_*.json

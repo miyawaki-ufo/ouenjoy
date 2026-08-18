@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b1633">
+<meta name="description" content="ウェルカムマッチの応援エントリー・当日チェックイン・ミニゲームがひとつになった応援アプリ">
+<title>ウェルカムマッチ 応援アプリ</title>
+<link rel="stylesheet" href="assets/styles.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥍</text></svg>">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap">
+    <div class="brand">
+      <span id="brandTeam">ラクロス部</span>
+      <small>WELCOME MATCH</small>
+    </div>
+    <div class="spacer"></div>
+    <button class="sync-dot" id="syncDot" data-state="local" type="button">オフライン保存</button>
+  </div>
+</header>
+
+<main id="views">
+
+  <!-- ============================== ホーム ============================== -->
+  <section class="view is-active" data-view="home">
+    <div class="wrap">
+
+      <div class="hero">
+        <div class="kicker" id="heroKicker">WELCOME MATCH</div>
+        <h1 id="heroTitle">ウェルカムマッチ</h1>
+        <div class="meta" id="heroMeta"></div>
+        <div class="countdown" id="heroCountdown"></div>
+      </div>
+
+      <div class="card" id="liveCard">
+        <h2>今日の来場者数</h2>
+        <div class="live-count">
+          <div class="n" id="liveCount">0</div>
+          <div class="l">人がチェックイン済み</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>みんなの応援、集まってます</h2>
+
+        <div class="meter">
+          <div class="row">
+            <span class="name">🏟 当日 現地応援（見込み）</span>
+            <span class="val"><b id="mOnsite">0</b> 人</span>
+          </div>
+          <div class="bar"><span id="bOnsite" style="width:0%"></span></div>
+        </div>
+
+        <div class="meter">
+          <div class="row">
+            <span class="name">🛍 グッズ購入応援</span>
+            <span class="val"><b id="mGoodsQty">0</b> 点</span>
+          </div>
+          <div class="bar coral"><span id="bGoods" style="width:0%"></span></div>
+        </div>
+
+        <div class="stat-grid mt">
+          <div class="stat"><div class="n" id="sEntries">0</div><div class="l">エントリー数</div></div>
+          <div class="stat"><div class="n" id="sGoodsEntries">0</div><div class="l">グッズ応援 件数</div></div>
+          <div class="stat"><div class="n" id="sMessages">0</div><div class="l">応援メッセージ</div></div>
+        </div>
+      </div>
+
+      <div class="card" id="relationCard">
+        <h2>応援してくれている人</h2>
+        <div class="donut-wrap">
+          <div class="donut" id="homeDonut"></div>
+          <div class="legend" id="homeDonutLegend"></div>
+        </div>
+      </div>
+
+      <button class="btn big-action" data-go="entry" type="button">
+        応援エントリーする
+        <small>現地応援 / グッズ購入応援</small>
+      </button>
+
+      <div class="btn-row mt">
+        <button class="btn ghost" data-go="checkin" type="button">✅ 当日チェックイン</button>
+        <button class="btn ghost" data-go="game" type="button">🥍 ミニゲーム</button>
+      </div>
+      <button class="btn ghost mt" data-go="team" type="button">📣 ラクロス部のことを知る</button>
+
+      <div class="section-title" id="msgTitle" hidden>応援メッセージ</div>
+      <div class="msg-list" id="msgList"></div>
+
+    </div>
+  </section>
+
+  <!-- ============================== エントリー ============================== -->
+  <section class="view" data-view="entry">
+    <div class="wrap">
+      <h2 style="font-size:22px;margin-bottom:4px;">応援エントリー</h2>
+      <p class="muted">当日の人数とグッズの見込みを事前に把握したいけん、ぜひ答えてもらえると助かります！</p>
+
+      <form id="entryForm" novalidate>
+
+        <div class="card">
+          <div class="field">
+            <label for="fName">お名前（ニックネームでもOK）<span class="req">必須</span></label>
+            <input type="text" id="fName" name="name" autocomplete="name" maxlength="40" placeholder="例：みやわき">
+          </div>
+
+          <div class="field">
+            <span class="lab">あなたと部のつながり</span>
+            <select id="fRelation">
+              <option value="OG">OG・卒業生</option>
+              <option value="現役家族">現役部員の家族</option>
+              <option value="友人">部員の友人・知人</option>
+              <option value="大学関係">大学関係者</option>
+              <option value="他大学">他大学・他チーム</option>
+              <option value="その他" selected>その他・はじめまして</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>どんなふうに応援する？<span class="req">必須</span></h2>
+          <div class="choices" id="supportChoices">
+            <label class="choice" data-kind="onsite">
+              <input type="radio" name="kind" value="onsite">
+              <div class="t">🏟 当日 現地で応援する</div>
+              <div class="d">会場に行って声援を送ります</div>
+            </label>
+            <label class="choice" data-kind="goods">
+              <input type="radio" name="kind" value="goods">
+              <div class="t">🛍 グッズ購入で応援する</div>
+              <div class="d">当日は行けないけどグッズで応援（グッズ代＋送料）</div>
+            </label>
+            <label class="choice" data-kind="both">
+              <input type="radio" name="kind" value="both">
+              <div class="t">🏟＋🛍 現地に行って、グッズも買う</div>
+              <div class="d">当日会場で部員から直接お渡しします（送料なし）</div>
+            </label>
+          </div>
+        </div>
+
+        <div class="card hidden" id="onsiteBlock">
+          <h2>当日は何人で来られますか？</h2>
+          <p class="hint mb0">ご本人を含めた人数を入れてください。</p>
+          <div class="stepper mt">
+            <button type="button" data-step="-1" data-target="headcount" aria-label="減らす">−</button>
+            <span class="num" id="headcountNum">1</span>
+            <button type="button" data-step="1" data-target="headcount" aria-label="増やす">＋</button>
+            <span class="muted">人</span>
+          </div>
+        </div>
+
+        <div class="card hidden" id="goodsBlock">
+          <h2>欲しいグッズ</h2>
+          <div id="goodsList"></div>
+
+          <div class="field mt" id="deliveryField">
+            <span class="lab">受け取り方法</span>
+            <div class="choices cols-2">
+              <label class="choice" data-delivery="onsite">
+                <input type="radio" name="delivery" value="onsite">
+                <div class="t">会場で受取</div>
+                <div class="d">送料なし</div>
+              </label>
+              <label class="choice" data-delivery="ship">
+                <input type="radio" name="delivery" value="ship">
+                <div class="t">配送</div>
+                <div class="d" id="shipNote">＋送料</div>
+              </label>
+            </div>
+          </div>
+
+          <div class="field hidden" id="emailField">
+            <label for="fEmail">メールアドレス<span class="req">必須</span></label>
+            <input type="email" id="fEmail" inputmode="email" autocomplete="email" placeholder="example@mail.com">
+            <div class="note">グッズの詳細とお届け方法について、後日ラクロス部からご案内をお送りします。<br>
+              アドレスは部のスタッフだけが確認します。アプリ上には表示されません。</div>
+          </div>
+
+          <div class="total-box">
+            <div class="line"><span>グッズ小計</span><span id="tSub">¥0</span></div>
+            <div class="line"><span>送料</span><span id="tShip">¥0</span></div>
+            <div class="grand"><span>合計（見込み）</span><b id="tGrand">¥0</b></div>
+          </div>
+          <p class="hint mt">※ここでの入力は「購入見込み」の把握が目的です。実際のお支払いは当日または別途ご案内します。</p>
+        </div>
+
+        <div class="card">
+          <div class="field mb0">
+            <label for="fMessage">応援メッセージ（任意・アプリに掲示されます）</label>
+            <textarea id="fMessage" maxlength="120" placeholder="例：はじめての公式戦、思いっきり楽しんで！"></textarea>
+          </div>
+        </div>
+
+        <div id="entryError"></div>
+        <button class="btn lime" type="submit" id="entrySubmit">この内容でエントリーする</button>
+        <button class="btn ghost mt" type="button" data-go="home">もどる</button>
+      </form>
+
+      <div class="hidden" id="entryDone">
+        <div class="card done">
+          <div class="emoji">🎉</div>
+          <h2>エントリーありがとう！</h2>
+          <p id="entryDoneMsg"></p>
+        </div>
+        <button class="btn lime" data-go="home" type="button">ホームで応援メーターを見る</button>
+        <button class="btn ghost mt" type="button" id="entryAgain">もう一件エントリーする</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================== チェックイン ============================== -->
+  <section class="view" data-view="checkin">
+    <div class="wrap">
+      <h2 style="font-size:22px;margin-bottom:4px;">当日チェックイン</h2>
+      <p class="muted">会場に着いたらタップしてね。来場者数のカウントに使わせてもらいます。</p>
+
+      <div id="checkinBefore">
+        <div class="card">
+          <h2>一緒に来た人数（自分を含む）</h2>
+          <div class="stepper mt">
+            <button type="button" data-step="-1" data-target="checkinNum" aria-label="減らす">−</button>
+            <span class="num" id="checkinNumNum">1</span>
+            <button type="button" data-step="1" data-target="checkinNum" aria-label="増やす">＋</button>
+            <span class="muted">人</span>
+          </div>
+        </div>
+        <div id="checkinError"></div>
+        <button class="btn big-action" id="checkinBtn" type="button">
+          来場しました！
+          <small>タップでチェックイン完了</small>
+        </button>
+      </div>
+
+      <div class="hidden" id="checkinAfter">
+        <div class="card done">
+          <div class="emoji">✅</div>
+          <h2>チェックイン完了！</h2>
+          <p id="checkinDoneMsg"></p>
+        </div>
+        <div class="card">
+          <div class="live-count">
+            <div class="n" id="checkinLive">0</div>
+            <div class="l">人が来場中</div>
+          </div>
+        </div>
+        <button class="btn ghost" type="button" id="checkinMore">追加でチェックインする</button>
+        <button class="btn lime mt" data-go="game" type="button">🥍 待ち時間にミニゲーム</button>
+      </div>
+
+      <button class="btn ghost mt" data-go="home" type="button">ホームへ</button>
+    </div>
+  </section>
+
+  <!-- ============================== ミニゲーム ============================== -->
+  <section class="view" data-view="game">
+    <div class="wrap">
+      <h2 style="font-size:22px;margin-bottom:4px;">🥍 シュートアウト</h2>
+      <p class="muted">動く狙いをタップで止めて、ゴーリーのいないコースへ。全5本、何本決まる？</p>
+
+      <div class="game-stage" id="gameStage">
+        <canvas id="gameCanvas" width="640" height="440"></canvas>
+      </div>
+
+      <div class="game-hud">
+        <div class="box"><small>ショット</small><b id="gShots">0</b>/5</div>
+        <div class="box"><small>ゴール</small><b id="gGoals">0</b></div>
+        <div class="box"><small>ハイスコア</small><b id="gBest">0</b></div>
+      </div>
+
+      <button class="btn lime mt" id="gameBtn" type="button">スタート</button>
+      <button class="btn ghost mt" data-go="home" type="button">ホームへ</button>
+    </div>
+  </section>
+
+  <!-- ============================== 部を知る ============================== -->
+  <section class="view" data-view="team">
+    <div class="wrap">
+      <h2 style="font-size:22px;margin-bottom:4px;" id="teamHeading">ラクロス部のこと</h2>
+
+      <div class="card">
+        <h2 id="introLead">はじめまして</h2>
+        <p id="introBody" style="white-space:pre-wrap;"></p>
+        <div class="facts" id="introFacts"></div>
+      </div>
+
+      <div class="section-title">そもそもラクロスって？</div>
+      <div class="card">
+        <div class="facts">
+          <div class="fact"><span class="k">使う道具</span><span>「クロス」と呼ばれる網のついたスティックでボールを運び、パス・シュートをします。</span></div>
+          <div class="fact"><span class="k">人数</span><span>女子のフィールドラクロスは、ゴーリーを含めて1チーム12人で戦います（男子は10人）。</span></div>
+          <div class="fact"><span class="k">防具</span><span>女子は原則ボディコンタクトが禁止のため、防具はアイガードとマウスガードが基本です。</span></div>
+          <div class="fact"><span class="k">大学から</span><span>ほとんどの選手が大学入学後に始める競技で、全国的にも大学から始める人が中心です。</span></div>
+          <div class="fact"><span class="k">五輪</span><span>2028年ロサンゼルス大会で、6人制の「ラクロス・シックスズ」が実施されます。</span></div>
+        </div>
+      </div>
+
+      <div class="section-title">◯×クイズ</div>
+      <div id="quizList"></div>
+      <div class="card center hidden" id="quizResult">
+        <div class="emoji" style="font-size:44px;" id="quizEmoji">🎉</div>
+        <h2 id="quizScore"></h2>
+        <p class="muted" id="quizComment"></p>
+      </div>
+
+      <button class="btn lime mt" data-go="entry" type="button">応援エントリーする</button>
+      <button class="btn ghost mt" data-go="home" type="button">ホームへ</button>
+    </div>
+  </section>
+
+  <!-- ============================== スタッフ ============================== -->
+  <section class="view" data-view="staff">
+    <div class="wrap">
+
+      <div id="staffLock">
+        <div class="card">
+          <h2>スタッフ用ページ</h2>
+          <p class="hint">集客カウント・集計・QRポスター印刷・設定はこちら。合言葉（PIN）を入れてください。</p>
+          <div class="field mt">
+            <label for="pinInput">PIN</label>
+            <input type="password" id="pinInput" inputmode="numeric" autocomplete="off" placeholder="初期値：2468">
+          </div>
+          <div id="pinError"></div>
+          <button class="btn" type="button" id="pinBtn">ひらく</button>
+        </div>
+      </div>
+
+      <div class="hidden" id="staffMain">
+        <div class="tabs">
+          <button data-panel="dash" class="is-active" type="button">📊 集計</button>
+          <button data-panel="count" type="button">🔢 手動カウント</button>
+          <button data-panel="list" type="button">📋 一覧</button>
+          <button data-panel="qr" type="button">🖨 QRポスター</button>
+          <button data-panel="config" type="button">⚙️ 設定</button>
+        </div>
+
+        <!-- 集計 -->
+        <div class="panel is-active" data-panel="dash">
+          <div class="card">
+            <h2>当日来場者数</h2>
+            <div class="live-count">
+              <div class="n" id="dashLive">0</div>
+              <div class="l">合計（QRチェックイン＋手動カウント）</div>
+            </div>
+            <div class="stat-grid mt">
+              <div class="stat"><div class="n" id="dashQr">0</div><div class="l">QR経由</div></div>
+              <div class="stat"><div class="n" id="dashManual">0</div><div class="l">手動</div></div>
+              <div class="stat"><div class="n" id="dashRate">-</div><div class="l">見込み達成率</div></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>事前エントリー見込み</h2>
+            <div class="stat-grid">
+              <div class="stat"><div class="n" id="dashEntries">0</div><div class="l">エントリー件数</div></div>
+              <div class="stat"><div class="n" id="dashOnsite">0</div><div class="l">現地応援 人数</div></div>
+              <div class="stat"><div class="n" id="dashGoodsCnt">0</div><div class="l">グッズ応援 件数</div></div>
+            </div>
+            <div class="stat-grid mt">
+              <div class="stat"><div class="n" id="dashGoodsQty">0</div><div class="l">グッズ 点数</div></div>
+              <div class="stat"><div class="n" id="dashGoodsAmt">¥0</div><div class="l">グッズ 金額</div></div>
+              <div class="stat"><div class="n" id="dashShipCnt">0</div><div class="l">配送希望</div></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>グッズ内訳（見込み）</h2>
+            <div id="dashGoodsBreak"></div>
+          </div>
+
+          <div class="card">
+            <h2>つながりの内訳</h2>
+            <div class="donut-wrap">
+              <div class="donut" id="dashDonut"></div>
+              <div class="legend" id="dashDonutLegend"></div>
+            </div>
+          </div>
+
+          <button class="btn ghost" type="button" id="refreshBtn">🔄 最新に更新</button>
+        </div>
+
+        <!-- 手動カウント -->
+        <div class="panel" data-panel="count">
+          <div class="card">
+            <h2>目視カウント</h2>
+            <p class="hint">QRを読んでくれなかった人の分は、ここで足してください。合計に自動で合算されます。</p>
+            <div class="live-count">
+              <div class="n" id="manualCount">0</div>
+              <div class="l">手動カウント分</div>
+            </div>
+            <div class="counter-pad">
+              <button class="plus" data-delta="1" type="button">＋1</button>
+              <button class="plus" data-delta="5" type="button">＋5</button>
+              <button class="plus" data-delta="10" type="button">＋10</button>
+              <button class="minus" data-delta="-1" type="button">−1</button>
+              <button class="minus" data-delta="-5" type="button">−5</button>
+              <button class="minus" data-delta="-10" type="button">−10</button>
+            </div>
+          </div>
+          <div class="card">
+            <h2>合計</h2>
+            <div class="live-count">
+              <div class="n" id="countTotal">0</div>
+              <div class="l">QR＋手動の総来場者数</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 一覧 -->
+        <div class="panel" data-panel="list">
+          <div class="card">
+            <h2>エントリー一覧</h2>
+            <div class="table-scroll">
+              <table class="data" id="entryTable">
+                <thead><tr>
+                  <th>受付</th><th>お名前</th><th>種別</th><th class="num">人数</th>
+                  <th class="num">グッズ点数</th><th class="num">金額</th><th>受取</th><th>つながり</th>
+                </tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+            <p class="hint mt" id="listEmptyNote"></p>
+            <div class="notice mt">メールアドレスは安全のためアプリには表示されません。配送希望者へのご案内は、
+              スプレッドシートの <code>entries</code> シートの <code>email</code> 列から行ってください。</div>
+            <div class="btn-row mt">
+              <button class="btn ghost sm" type="button" id="csvEntries">エントリーCSV</button>
+              <button class="btn ghost sm" type="button" id="csvCheckins">チェックインCSV</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- QRポスター -->
+        <div class="panel" data-panel="qr">
+          <div class="card">
+            <h2>掲示用QRコード</h2>
+            <p class="hint">このQRを大きく印刷して受付や入口に貼ってください。来場者がスマホで読み取ると、このアプリのチェックイン画面が開きます。</p>
+            <div class="field mt">
+              <label for="qrUrl">QRに入れるURL</label>
+              <input type="url" id="qrUrl" placeholder="https://＜公開したURL＞/">
+              <div class="note">アプリを公開したURLを入れてください。空のままだと今開いているURLを使います。</div>
+            </div>
+            <div class="qr-preview">
+              <div id="qrPreview"></div>
+              <div class="qr-url" id="qrUrlEcho"></div>
+            </div>
+            <div class="mt">
+              <label class="choice is-on" style="display:block">
+                <input type="checkbox" id="qrTwoPages" checked>
+                <div class="t">2種類のポスターを印刷</div>
+                <div class="d">「チェックイン用」と「事前エントリー用」の2枚を出します</div>
+              </label>
+            </div>
+            <button class="btn lime mt" type="button" id="printBtn">🖨 A4で印刷する</button>
+            <button class="btn ghost mt" type="button" id="downloadQr">QR画像（SVG）を保存</button>
+          </div>
+        </div>
+
+        <!-- 設定 -->
+        <div class="panel" data-panel="config">
+          <div class="card">
+            <h2>試合の情報</h2>
+            <div class="field"><label for="cTeam">チーム名</label><input type="text" id="cTeam"></div>
+            <div class="field"><label for="cEvent">イベント名</label><input type="text" id="cEvent"></div>
+            <div class="field"><label for="cOpponent">対戦相手</label><input type="text" id="cOpponent" placeholder="例：◯◯大学"></div>
+            <div class="field"><label for="cDate">日付</label><input type="date" id="cDate"></div>
+            <div class="field"><label for="cTime">開始時刻</label><input type="time" id="cTime"></div>
+            <div class="field"><label for="cVenue">会場</label><input type="text" id="cVenue"></div>
+            <div class="field"><label for="cVenueUrl">会場の地図URL（任意）</label><input type="url" id="cVenueUrl" placeholder="https://maps.google.com/..."></div>
+          </div>
+
+          <div class="card">
+            <h2>目標</h2>
+            <div class="field"><label for="cGoalOnsite">現地応援の目標人数</label><input type="number" id="cGoalOnsite" min="1"></div>
+            <div class="field mb0"><label for="cGoalGoods">グッズ応援の目標点数</label><input type="number" id="cGoalGoods" min="1"></div>
+          </div>
+
+          <div class="card goods-editor">
+            <h2>グッズ</h2>
+            <p class="hint">商品名と金額を入れてください。空の行は保存時に無視されます。</p>
+            <div id="goodsEditor" class="mt"></div>
+            <button class="btn ghost sm" type="button" id="addGoods">＋ 商品を追加</button>
+            <div class="field mt mb0">
+              <label for="cShipping">送料（円）</label>
+              <input type="number" id="cShipping" min="0" step="10">
+              <div class="note">会場で受け取る場合は自動的に0円になります。</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>部の紹介文</h2>
+            <div class="field"><label for="cIntroLead">見出し</label><input type="text" id="cIntroLead"></div>
+            <div class="field"><label for="cIntroBody">本文</label><textarea id="cIntroBody" style="min-height:140px"></textarea></div>
+            <div class="field mb0"><label for="cIntroFacts">箇条データ（1行1件・「項目：内容」の形）</label>
+              <textarea id="cIntroFacts" style="min-height:120px" placeholder="創部：1990年&#10;部員数：32名"></textarea>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>◯×クイズ</h2>
+            <p class="hint">1行1問。「問題文 | ◯ or × | 解説」の形で書いてください。</p>
+            <textarea id="cQuiz" style="min-height:160px"></textarea>
+          </div>
+
+          <div class="card">
+            <h2>データの保存先</h2>
+            <div class="field">
+              <label for="cGasUrl">Google Apps Script のURL</label>
+              <input type="url" id="cGasUrl" placeholder="https://script.google.com/macros/s/.../exec">
+              <div class="note">この端末だけで一時的に切り替えたいときに使います。<strong>本番では <code>assets/config.js</code> に書いてから公開してください</strong>（来場者の端末には設定画面がないため）。</div>
+              <div id="gasSource"></div>
+            </div>
+            <div class="field">
+              <label for="cAdminKey">設定用の合言葉</label>
+              <input type="text" id="cAdminKey" autocomplete="off" placeholder="Code.gs の ADMIN_KEY と同じ言葉">
+              <div class="note">設定の書き換えを守るための合言葉です。<code>gas/Code.gs</code> の <code>ADMIN_KEY</code> と同じ言葉を入れてください。
+                <strong>この端末にだけ保存され、公開ファイルには含まれません。</strong></div>
+            </div>
+            <div class="field mb0">
+              <label for="cPin">スタッフPIN</label>
+              <input type="text" id="cPin" inputmode="numeric" maxlength="12">
+              <div class="note">誤って開いてしまうのを防ぐための簡易的なものです。<strong>本格的な鍵ではありません</strong>
+                （知っている人は入れてしまいます）。大事な設定は上の合言葉で守ってください。</div>
+            </div>
+          </div>
+
+          <div id="configMsg"></div>
+          <button class="btn lime" type="button" id="saveConfig">設定を保存</button>
+          <button class="btn ghost mt" type="button" id="testGas">接続テスト</button>
+          <button class="btn ghost mt" type="button" id="exportConfig">設定をJSONで書き出し</button>
+          <button class="btn ghost mt" type="button" id="clearLocal">この端末のテストデータを消す</button>
+          <button class="btn ghost mt" type="button" id="staffLockBtn">スタッフページを閉じる</button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+<nav class="tabbar">
+  <div class="wrap">
+    <button data-go="home" class="is-active" type="button"><span class="ico">🏠</span>ホーム</button>
+    <button data-go="entry" type="button"><span class="ico">✍️</span>エントリー</button>
+    <button data-go="checkin" type="button"><span class="ico">✅</span>受付</button>
+    <button data-go="game" type="button"><span class="ico">🥍</span>ゲーム</button>
+    <button data-go="team" type="button"><span class="ico">📣</span>部を知る</button>
+  </div>
+</nav>
+
+<!-- 印刷用（画面上は非表示、印刷時のみ出力） -->
+<div id="poster"></div>
+
+<script src="assets/config.js"></script>
+<script src="assets/qr.js"></script>
+<script src="assets/game.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>
