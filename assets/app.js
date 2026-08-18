@@ -29,6 +29,12 @@
       { id: 'g2', name: 'ステッカー', price: 500 },
       { id: 'g3', name: 'チームTシャツ', price: 3000 }
     ],
+    // 来場者に見える文言（設定画面から編集できる）
+    copyMeterTitle: 'みなさんの応援、ぞくぞく集結中！',
+    copyNameExample: '例：リロ',
+    copyEntryLead: '当日の来場人数とグッズの購入見込みを事前に把握したいので、ぜひご協力ください！',
+    copyCheckinLead: '会場に着いたらタップしてください。来場者数のカウントに使わせていただきます。',
+
     introLead: 'はじめまして、ラクロス部です',
     introBody: '【ここは設定画面から自由に書き換えてください】\n\n部の雰囲気、今シーズンの目標、この試合にかける想いなどを書くと、はじめて来てくれる人にも伝わりやすくなります。',
     introFacts: '創部：（設定画面で編集）\n部員数：（設定画面で編集）\n活動場所：（設定画面で編集）\n活動日：（設定画面で編集）',
@@ -429,12 +435,27 @@
     else cd.innerHTML = '応援ありがとうございました！';
   }
 
+  /** 設定画面から編集できる文言を、画面に反映する */
+  function applyCopy() {
+    var s = state.settings;
+    var set = function (sel, value, attr) {
+      var el = $(sel);
+      if (!el || !value) return;
+      if (attr) el.setAttribute(attr, value); else el.textContent = value;
+    };
+    set('#meterTitle', s.copyMeterTitle);
+    set('#fName', s.copyNameExample, 'placeholder');
+    set('#entryLead', s.copyEntryLead);
+    set('#checkinLead', s.copyCheckinLead);
+  }
+
   function isEventDay() {
     return !!state.settings.eventDate && state.settings.eventDate === todayStr();
   }
 
   function renderHome() {
     renderHero();
+    applyCopy();
     var s = summarize();
     var set = state.settings;
 
@@ -1246,6 +1267,10 @@
     $('#cGoalOnsite').value = s.goalOnsite || 100;
     $('#cGoalGoods').value = s.goalGoods || 60;
     $('#cShipping').value = s.shipping || 0;
+    $('#cCopyMeter').value = s.copyMeterTitle || '';
+    $('#cCopyNameEx').value = s.copyNameExample || '';
+    $('#cCopyEntry').value = s.copyEntryLead || '';
+    $('#cCopyCheckin').value = s.copyCheckinLead || '';
     $('#cIntroLead').value = s.introLead || '';
     $('#cIntroBody').value = s.introBody || '';
     $('#cIntroFacts').value = s.introFacts || '';
@@ -1289,6 +1314,10 @@
       goalGoods: Math.max(1, Number($('#cGoalGoods').value) || 60),
       shipping: Math.max(0, Number($('#cShipping').value) || 0),
       goods: goods,
+      copyMeterTitle: $('#cCopyMeter').value.trim(),
+      copyNameExample: $('#cCopyNameEx').value.trim(),
+      copyEntryLead: $('#cCopyEntry').value.trim(),
+      copyCheckinLead: $('#cCopyCheckin').value.trim(),
       introLead: $('#cIntroLead').value,
       introBody: $('#cIntroBody').value,
       introFacts: $('#cIntroFacts').value,
@@ -1318,6 +1347,7 @@
       btn.disabled = false;
       btn.textContent = '設定を保存';
       renderHero();
+      applyCopy();
       renderGoodsPicker();
       renderTeam();
       renderQrPreview();
@@ -1386,6 +1416,7 @@
     bindStaff();
 
     renderHero();
+    applyCopy();
     renderGoodsPicker();
     renderTeam();
     refreshSyncBadge();
@@ -1397,6 +1428,7 @@
       return Data.flushPending();
     }).then(function () {
       renderHero();
+      applyCopy();
       renderGoodsPicker();
       renderTeam();
       renderHome();

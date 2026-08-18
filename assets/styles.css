@@ -68,9 +68,11 @@ a { color: var(--navy-700); }
   display: inline-flex; align-items: center; gap: 6px;
   font-size: 11px; opacity: .85;
   background: rgba(255, 255, 255, .12);
-  padding: 4px 10px; border-radius: 999px;
+  /* スタッフページを開く隠し操作（5回タップ）を兼ねるため、指で押せる高さを確保する */
+  min-height: 38px; padding: 4px 14px; border-radius: 999px;
   border: none; color: #fff; cursor: pointer;
   font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
 }
 .sync-dot::before {
   content: ""; width: 7px; height: 7px; border-radius: 50%;

@@ -44,7 +44,7 @@
       </div>
 
       <div class="card">
-        <h2>みんなの応援、集まってます</h2>
+        <h2 id="meterTitle">みなさんの応援、ぞくぞく集結中！</h2>
 
         <div class="meter">
           <div class="row">
@@ -98,14 +98,14 @@
   <section class="view" data-view="entry">
     <div class="wrap">
       <h2 style="font-size:22px;margin-bottom:4px;">応援エントリー</h2>
-      <p class="muted">当日の人数とグッズの見込みを事前に把握したいけん、ぜひ答えてもらえると助かります！</p>
+      <p class="muted" id="entryLead">当日の来場人数とグッズの購入見込みを事前に把握したいので、ぜひご協力ください！</p>
 
       <form id="entryForm" novalidate>
 
         <div class="card">
           <div class="field">
             <label for="fName">お名前（ニックネームでもOK）<span class="req">必須</span></label>
-            <input type="text" id="fName" name="name" autocomplete="name" maxlength="40" placeholder="例：みやわき">
+            <input type="text" id="fName" name="name" autocomplete="name" maxlength="40" placeholder="例：リロ">
           </div>
 
           <div class="field">
@@ -216,7 +216,7 @@
   <section class="view" data-view="checkin">
     <div class="wrap">
       <h2 style="font-size:22px;margin-bottom:4px;">当日チェックイン</h2>
-      <p class="muted">会場に着いたらタップしてね。来場者数のカウントに使わせてもらいます。</p>
+      <p class="muted" id="checkinLead">会場に着いたらタップしてください。来場者数のカウントに使わせていただきます。</p>
 
       <div id="checkinBefore">
         <div class="card">
@@ -487,6 +487,17 @@
               <input type="number" id="cShipping" min="0" step="10">
               <div class="note">会場で受け取る場合は自動的に0円になります。</div>
             </div>
+          </div>
+
+          <div class="card">
+            <h2>画面の文言</h2>
+            <p class="hint">来場者に見える文章です。書き換えるとすぐ反映されます。</p>
+            <div class="field mt"><label for="cCopyMeter">ホームの見出し</label><input type="text" id="cCopyMeter"></div>
+            <div class="field"><label for="cCopyNameEx">お名前欄の記入例</label><input type="text" id="cCopyNameEx">
+              <div class="note">実在の方のお名前にならないよう気をつけてください。</div>
+            </div>
+            <div class="field"><label for="cCopyEntry">エントリー画面の案内文</label><textarea id="cCopyEntry" style="min-height:70px"></textarea></div>
+            <div class="field mb0"><label for="cCopyCheckin">チェックイン画面の案内文</label><textarea id="cCopyCheckin" style="min-height:70px"></textarea></div>
           </div>
 
           <div class="card">
