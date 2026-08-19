@@ -218,6 +218,21 @@
       <h2 style="font-size:22px;margin-bottom:4px;">当日チェックイン</h2>
       <p class="muted" id="checkinLead">会場に着いたらタップしてください。来場者数のカウントに使わせていただきます。</p>
 
+      <div class="hidden" id="checkinLocked">
+        <div class="card done">
+          <div class="emoji" id="lockEmoji">🗓</div>
+          <h2 id="lockTitle">受付は試合当日にオープンします</h2>
+          <p id="lockMsg"></p>
+        </div>
+        <button class="btn lime" data-go="entry" type="button">先に応援エントリーしておく</button>
+        <button class="btn ghost mt" data-go="team" type="button">📣 ラクロス部のことを知る</button>
+        <button class="btn ghost mt hidden" id="staffTestCheckin" type="button">スタッフ用：受付の動作をテストする</button>
+      </div>
+
+      <div id="checkinTestBanner" class="notice hidden">
+        テストモードです。ここで記録した分は<strong>当日の来場者数には含まれません</strong>。
+      </div>
+
       <div id="checkinBefore">
         <div class="card">
           <h2>一緒に来た人数（自分を含む）</h2>
@@ -350,6 +365,7 @@
               <div class="stat"><div class="n" id="dashManual">0</div><div class="l">手動</div></div>
               <div class="stat"><div class="n" id="dashRate">-</div><div class="l">見込み達成率</div></div>
             </div>
+            <div id="dashOffDay"></div>
           </div>
 
           <div class="card">

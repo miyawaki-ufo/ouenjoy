@@ -350,8 +350,16 @@
       if (e.message) s.messages.push({ name: e.name, message: e.message, ts: e.ts });
     });
 
+    s.offDayCount = 0;
+    s.offDayRecords = 0;
     checkins.forEach(function (c) {
       var n = Number(c.count) || 0;
+      if (!isCountableCheckin(c)) {
+        // 当日以外の記録（誤タップ・テスト）は集計から外す
+        s.offDayCount += n;
+        s.offDayRecords++;
+        return;
+      }
       if (c.source === 'manual') s.manualCount += n; else s.qrCount += n;
     });
     s.liveTotal = s.qrCount + s.manualCount;
@@ -378,6 +386,7 @@
 
     if (view === 'game') { Game.enter(); } else { Game.leave(); }
     if (view === 'home') renderHome();
+    if (view === 'checkin') renderCheckin();
     if (view === 'staff') renderStaff();
     if (view === 'team') renderTeam();
     if (view === 'entry') renderGoodsPicker();
@@ -451,6 +460,32 @@
 
   function isEventDay() {
     return !!state.settings.eventDate && state.settings.eventDate === todayStr();
+  }
+
+  /** 試合日から見て今日がいつか。'before' | 'today' | 'after' | 'unknown'（日付未設定） */
+  function eventDayState() {
+    var d = state.settings.eventDate;
+    if (!d) return 'unknown';
+    var today = todayStr();
+    if (today === d) return 'today';
+    return today < d ? 'before' : 'after';
+  }
+
+  /** ISO文字列を、その端末のローカル日付（YYYY-MM-DD）に変換する */
+  function localDateOf(iso) {
+    var d = new Date(iso);
+    return isNaN(d) ? '' : todayStr(d);
+  }
+
+  /**
+   * 来場者数に数えてよい記録かどうか。
+   * 試合日を設定してあれば「当日に記録されたもの」だけを数える。
+   * これにより、前日までの誤タップやスタッフのテストが本番の数字を汚さない。
+   */
+  function isCountableCheckin(c) {
+    var d = state.settings.eventDate;
+    if (!d) return true;              // 日付未設定なら判定できないので全部数える
+    return localDateOf(c.ts) === d;
   }
 
   function renderHome() {
@@ -728,8 +763,72 @@
    * ==================================================================== */
 
   var checkinCount = 1;
+  var checkinTestMode = false;
+
+  /** この端末が今日すでに受け付け済みか（誤って二重に数えないため） */
+  function checkedInToday() {
+    var rec = readLS(LS.checkedIn, null);
+    if (!rec) return 0;
+    if (typeof rec === 'number') return 0;         // 旧バージョンの記録は無視する
+    return rec.date === todayStr() ? (rec.count || 0) : 0;
+  }
+
+  function rememberCheckin(n) {
+    var today = todayStr();
+    var rec = readLS(LS.checkedIn, null);
+    var base = (rec && typeof rec === 'object' && rec.date === today) ? (rec.count || 0) : 0;
+    writeLS(LS.checkedIn, { date: today, count: base + n });
+  }
+
+  /** 受付画面の表示を、試合日との関係で切り替える */
+  function renderCheckin() {
+    var phase = eventDayState();
+    var locked = (phase === 'before' || phase === 'after') && !checkinTestMode;
+
+    $('#checkinLocked').classList.toggle('hidden', !locked);
+    $('#checkinTestBanner').classList.toggle('hidden', !checkinTestMode);
+
+    if (locked) {
+      $('#checkinBefore').classList.add('hidden');
+      $('#checkinAfter').classList.add('hidden');
+
+      var d = state.settings.eventDate;
+      if (phase === 'before') {
+        var days = Math.round((new Date(d + 'T00:00:00') - new Date(todayStr() + 'T00:00:00')) / 86400000);
+        $('#lockEmoji').textContent = '🗓';
+        $('#lockTitle').textContent = '受付は試合当日にオープンします';
+        $('#lockMsg').textContent = '試合まであと ' + days + ' 日です。当日、会場に着いてからこの画面を開いてください。' +
+          'いまのうちに応援エントリーをしておくと、部員の準備がとても助かります。';
+      } else {
+        $('#lockEmoji').textContent = '🙌';
+        $('#lockTitle').textContent = '受付は終了しました';
+        $('#lockMsg').textContent = 'たくさんの応援をありがとうございました！';
+      }
+      // スタッフだけが見えるテスト用の入り口
+      $('#staffTestCheckin').classList.toggle('hidden', !readLS(LS.staff, false));
+      return;
+    }
+
+    // 当日（または日付未設定）の通常表示
+    var already = checkedInToday();
+    if (already > 0) {
+      $('#checkinBefore').classList.add('hidden');
+      $('#checkinAfter').classList.remove('hidden');
+      $('#checkinDoneMsg').textContent = 'この端末では、すでに ' + already + ' 名ぶんの受付が完了しています。' +
+        'あとから合流した方がいる場合は、下のボタンから追加してください。';
+      $('#checkinLive').textContent = summarize().liveTotal.toLocaleString('ja-JP');
+    } else {
+      $('#checkinBefore').classList.remove('hidden');
+      $('#checkinAfter').classList.add('hidden');
+    }
+  }
 
   function bindCheckin() {
+    $('#staffTestCheckin').addEventListener('click', function () {
+      checkinTestMode = true;
+      renderCheckin();
+    });
+
     $('#checkinBtn').addEventListener('click', function () {
       var btn = this;
       var errBox = $('#checkinError');
@@ -745,11 +844,12 @@
       };
 
       Data.addCheckin(record).then(function (res) {
-        var already = readLS(LS.checkedIn, 0);
-        writeLS(LS.checkedIn, already + checkinCount);
+        rememberCheckin(checkinCount);
         var s = summarize();
         $('#checkinDoneMsg').textContent = checkinCount + ' 名で受付しました。' +
-          (res.offline ? '（電波が弱いため端末に保存。つながり次第、自動送信されます）' : 'たくさんの応援ありがとうございます！');
+          (checkinTestMode ? '（テストモードのため、当日の集計には含まれません）'
+            : res.offline ? '（電波が弱いため端末に保存。つながり次第、自動送信されます）'
+            : 'たくさんの応援ありがとうございます！');
         $('#checkinLive').textContent = s.liveTotal.toLocaleString('ja-JP');
         $('#checkinBefore').classList.add('hidden');
         $('#checkinAfter').classList.remove('hidden');
@@ -1088,6 +1188,21 @@
     $('#dashRate').textContent = s.onsitePeople > 0
       ? Math.round(s.liveTotal / s.onsitePeople * 100) + '%'
       : '-';
+
+    // 集計から外した記録があれば必ず知らせる（黙って除外しない）
+    var off = $('#dashOffDay');
+    if (s.offDayRecords > 0) {
+      off.innerHTML = '<div class="notice mt">試合当日（' + esc(state.settings.eventDate) + '）以外に記録された受付が ' +
+        s.offDayRecords + ' 件（' + s.offDayCount + ' 名ぶん）あります。<br>' +
+        '誤タップやテストとみなして<strong>上の合計には含めていません</strong>。' +
+        'これも数えたい場合は、設定の「日付」を確認するか、手動カウントで足してください。</div>';
+    } else if (!state.settings.eventDate) {
+      off.innerHTML = '<div class="notice mt">設定に試合の<strong>日付が入っていません</strong>。' +
+        'いま記録された受付は、日付にかかわらずすべて合計に入ります。' +
+        '当日前の誤タップを防ぐため、日付を設定しておくことをおすすめします。</div>';
+    } else {
+      off.innerHTML = '';
+    }
 
     $('#dashEntries').textContent = s.entryCount.toLocaleString('ja-JP');
     $('#dashOnsite').textContent = s.onsitePeople.toLocaleString('ja-JP');
@@ -1432,6 +1547,8 @@
       renderGoodsPicker();
       renderTeam();
       renderHome();
+      // データを読み終えてから描き直す（読み込み前の 0 が残らないように）
+      if (currentView === 'checkin') renderCheckin();
       if (currentView === 'staff') renderStaff();
     });
 
