@@ -11,7 +11,7 @@
   ファイルを更新したのに古い画面が出るときは、この数字を全部そろえて増やしてください
   （ブラウザが前回のファイルを覚えてしまうのを防ぎます）。
 -->
-<link rel="stylesheet" href="assets/styles.css?v=10">
+<link rel="stylesheet" href="assets/styles.css?v=11">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥍</text></svg>">
 </head>
 <body>
@@ -415,7 +415,8 @@
           <p class="hint">集客カウント・集計・QRポスター印刷・設定はこちら。合言葉（PIN）を入れてください。</p>
           <div class="field mt">
             <label for="pinInput">PIN</label>
-            <input type="password" id="pinInput" inputmode="numeric" autocomplete="off" placeholder="初期値：2468">
+            <input type="password" id="pinInput" inputmode="numeric" autocomplete="off">
+            <div class="note">PINが分からない場合は、幹部メンバーに確認してください。</div>
           </div>
           <div id="pinError"></div>
           <button class="btn" type="button" id="pinBtn">ひらく</button>
@@ -665,7 +666,9 @@
               <label for="cPin">スタッフPIN</label>
               <input type="text" id="cPin" inputmode="numeric" maxlength="12">
               <div class="note">誤って開いてしまうのを防ぐための簡易的なものです。<strong>本格的な鍵ではありません</strong>
-                （知っている人は入れてしまいます）。大事な設定は上の合言葉で守ってください。</div>
+                （知っている人は入れてしまいます）。大事な設定は上の合言葉で守ってください。<br>
+                <strong>この端末だけに保存されます。</strong>スタッフ全員の端末で同じにしたい場合は、各端末で入力してください。</div>
+              <div id="pinWarn"></div>
             </div>
           </div>
 
@@ -696,9 +699,9 @@
 <!-- 印刷用（画面上は非表示、印刷時のみ出力） -->
 <div id="poster"></div>
 
-<script src="assets/config.js?v=10"></script>
-<script src="assets/qr.js?v=10"></script>
-<script src="assets/game.js?v=10"></script>
-<script src="assets/app.js?v=10"></script>
+<script src="assets/config.js?v=11"></script>
+<script src="assets/qr.js?v=11"></script>
+<script src="assets/game.js?v=11"></script>
+<script src="assets/app.js?v=11"></script>
 </body>
 </html>

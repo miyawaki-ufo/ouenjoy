@@ -1772,6 +1772,12 @@
     $('#cAdminKey').value = s.adminKey || '';
     $('#cPin').value = s.staffPin || '';
 
+    // 初期のままのPINは公開コードから分かってしまうため、変更をうながす
+    $('#pinWarn').innerHTML = (s.staffPin === DEFAULT_SETTINGS.staffPin)
+      ? '<div class="notice">⚠ PINが初期値のままです。アプリのコードは公開されているため、' +
+        '初期値は誰でも調べられます。<strong>別の数字に変更してください。</strong></div>'
+      : '';
+
     // 接続先がどこから来ているのかを明示する
     var fileUrl = (FILE_CONFIG.gasUrl || '').trim();
     var src = $('#gasSource');
