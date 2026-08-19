@@ -27,6 +27,9 @@
     goalOnsite: 100,
     goalGoods: 60,
     shipping: 500,
+    // グッズの配送を受け付けるか。false のときは会場受取だけになり、
+    // メールアドレスの入力欄も出ない（個人情報を扱わない運用にできる）
+    allowShipping: false,
     goods: [
       { id: 'g1', name: '応援タオル', price: 1500 },
       { id: 'g2', name: 'ステッカー', price: 500 },
@@ -676,16 +679,48 @@
   function renderGoodsPicker() {
     renderGoodsInto($('#goodsList'), entryForm.qty);
     $('#shipNote').textContent = '＋' + yen(state.settings.shipping);
+    applyShippingVisibility();
     updateTotals();
   }
 
   function goodsSelection() { return selectionFrom(entryForm.qty); }
 
+  /** 配送を受け付ける設定になっているか */
+  function shippingEnabled() { return state.settings.allowShipping === true; }
+
   /** 配送になる組み合わせかどうか（＝メールアドレスが必要かどうか） */
   function needsDelivery() {
+    if (!shippingEnabled()) return false;                              // 配送を受け付けない運用
     if (entryForm.kind === 'goods') return true;                       // グッズのみは必ず配送
     if (entryForm.kind === 'both') return entryForm.delivery === 'ship'; // 会場受取なら不要
     return false;
+  }
+
+  /**
+   * 配送のオン/オフに応じて、エントリー画面の選択肢を出し分ける。
+   * オフのときは「グッズ購入で応援（配送）」と受取方法の選択そのものを隠す。
+   */
+  function applyShippingVisibility() {
+    var on = shippingEnabled();
+    var goodsOnly = $('#supportChoices .choice[data-kind="goods"]');
+    if (goodsOnly) goodsOnly.classList.toggle('hidden', !on);
+    $('#deliveryField').classList.toggle('hidden', !on);
+
+    // 会場受取だけの運用では、案内文も実態に合わせる
+    var bothDesc = $('#supportChoices .choice[data-kind="both"] .d');
+    if (bothDesc) {
+      bothDesc.textContent = on
+        ? '当日会場で部員から直接お渡しします（送料なし）'
+        : '当日会場で部員から直接お渡しします';
+    }
+
+    // 配送をやめた直後に「グッズのみ」が選ばれたままにならないようにする
+    if (!on && entryForm.kind === 'goods') {
+      entryForm.kind = '';
+      $$('#supportChoices input').forEach(function (i) { i.checked = false; });
+      markChoice($('#supportChoices'));
+      applyKindVisibility();
+    }
   }
 
   function updateTotals() {
@@ -824,6 +859,12 @@
       record.delivery = 'ship';
       record.shipping = Number(state.settings.shipping) || 0;
       record.total = t.sub + record.shipping;
+    }
+    if (wantsGoods && !shippingEnabled()) {
+      // 配送を受け付けない運用では、必ず会場受取として記録する
+      record.delivery = 'onsite';
+      record.shipping = 0;
+      record.total = t.sub;
     }
 
     var btn = $('#entrySubmit');
@@ -1397,6 +1438,11 @@
     $('#qrTwoPages').addEventListener('change', function () {
       this.closest('.choice').classList.toggle('is-on', this.checked);
     });
+
+    $('#cAllowShipping').addEventListener('change', function () {
+      $('#shipToggleLabel').classList.toggle('is-on', this.checked);
+      $('#shippingFeeField').classList.toggle('hidden', !this.checked);
+    });
     $('#printBtn').addEventListener('click', printPosters);
     $('#downloadQr').addEventListener('click', downloadQrSvg);
 
@@ -1547,7 +1593,9 @@
     $('#dashGoodsCnt').textContent = s.goodsEntries.toLocaleString('ja-JP');
     $('#dashGoodsQty').textContent = s.goodsQty.toLocaleString('ja-JP');
     $('#dashGoodsAmt').textContent = yen(s.goodsAmount);
+    // 配送を受け付けていない運用では、配送希望の欄は意味がないので出さない
     $('#dashShipCnt').textContent = s.shipCount.toLocaleString('ja-JP');
+    $('#dashShipCnt').closest('.stat').classList.toggle('hidden', !shippingEnabled() && s.shipCount === 0);
 
     renderDonut($('#arrivalSelfDonut'), $('#arrivalSelfLegend'), s.byArrivalSelf, '人が受付');
     renderDonut($('#arrivalCompDonut'), $('#arrivalCompLegend'), s.byArrivalCompanion, '名が同伴');
@@ -1759,6 +1807,9 @@
     $('#cVenueUrl').value = s.venueUrl || '';
     $('#cGoalOnsite').value = s.goalOnsite || 100;
     $('#cGoalGoods').value = s.goalGoods || 60;
+    $('#cAllowShipping').checked = s.allowShipping === true;
+    $('#shipToggleLabel').classList.toggle('is-on', s.allowShipping === true);
+    $('#shippingFeeField').classList.toggle('hidden', s.allowShipping !== true);
     $('#cShipping').value = s.shipping || 0;
     $('#cCopyMeter').value = s.copyMeterTitle || '';
     $('#cCopyNameEx').value = s.copyNameExample || '';
@@ -1811,6 +1862,7 @@
       venueUrl: $('#cVenueUrl').value.trim(),
       goalOnsite: Math.max(1, Number($('#cGoalOnsite').value) || 100),
       goalGoods: Math.max(1, Number($('#cGoalGoods').value) || 60),
+      allowShipping: $('#cAllowShipping').checked,
       shipping: Math.max(0, Number($('#cShipping').value) || 0),
       goods: goods,
       copyMeterTitle: $('#cCopyMeter').value.trim(),

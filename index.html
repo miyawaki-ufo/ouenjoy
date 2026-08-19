@@ -11,7 +11,7 @@
   ファイルを更新したのに古い画面が出るときは、この数字を全部そろえて増やしてください
   （ブラウザが前回のファイルを覚えてしまうのを防ぎます）。
 -->
-<link rel="stylesheet" href="assets/styles.css?v=11">
+<link rel="stylesheet" href="assets/styles.css?v=12">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥍</text></svg>">
 </head>
 <body>
@@ -615,7 +615,19 @@
             <p class="hint">商品名と金額を入れてください。空の行は保存時に無視されます。</p>
             <div id="goodsEditor" class="mt"></div>
             <button class="btn ghost sm" type="button" id="addGoods">＋ 商品を追加</button>
-            <div class="field mt mb0">
+            <div class="field mt">
+              <span class="lab">グッズの配送</span>
+              <label class="choice" id="shipToggleLabel" style="display:block">
+                <input type="checkbox" id="cAllowShipping">
+                <div class="t">配送を受け付ける</div>
+                <div class="d">当日来られない方にもグッズで応援してもらえます。<br>
+                  受け付ける場合は、お届け先を案内するためメールアドレスを入力してもらいます。</div>
+              </label>
+              <div class="note">オフにすると「グッズ購入で応援（配送）」の選択肢が消え、
+                <strong>会場での受け渡しだけ</strong>になります。メールアドレスも集めません。</div>
+            </div>
+
+            <div class="field mt mb0" id="shippingFeeField">
               <label for="cShipping">送料（円）</label>
               <input type="number" id="cShipping" min="0" step="10">
               <div class="note">会場で受け取る場合は自動的に0円になります。</div>
@@ -699,9 +711,9 @@
 <!-- 印刷用（画面上は非表示、印刷時のみ出力） -->
 <div id="poster"></div>
 
-<script src="assets/config.js?v=11"></script>
-<script src="assets/qr.js?v=11"></script>
-<script src="assets/game.js?v=11"></script>
-<script src="assets/app.js?v=11"></script>
+<script src="assets/config.js?v=12"></script>
+<script src="assets/qr.js?v=12"></script>
+<script src="assets/game.js?v=12"></script>
+<script src="assets/app.js?v=12"></script>
 </body>
 </html>
