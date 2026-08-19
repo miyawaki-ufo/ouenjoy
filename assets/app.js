@@ -353,7 +353,8 @@
 
     s.offDayCount = 0;
     s.offDayRecords = 0;
-    s.byArrivalRelation = {};   // 当日来場者の属性内訳
+    s.byArrivalSelf = {};       // 受付した本人の「部とのつながり」
+    s.byArrivalCompanion = {};  // 同伴者の「受付した人との関係」
     s.arrivalGoodsQty = 0;      // 当日その場でのグッズ購入希望
     s.arrivalGoodsAmount = 0;
     s.namedArrivals = 0;        // 名前まで分かっている受付の件数
@@ -373,21 +374,19 @@
       if (c.name) s.namedArrivals++;
       if (c.entryId) attended[c.entryId] = true;
 
-      // 代表者1名＋同伴者それぞれを、その人の答えで数える。
-      // 同伴者の記録がない古いデータは、従来どおり全員を代表者の属性で数える。
+      // 受付した本人と同伴者は、たずねた質問がちがうので別々に集計する。
+      // 本人 …「部とのつながり」／同伴者 …「受付した人との関係」
       var rel = c.relation || '不明';
+      s.byArrivalSelf[rel] = (s.byArrivalSelf[rel] || 0) + 1;
+
       var comp = Array.isArray(c.companions) ? c.companions : [];
-      if (comp.length) {
-        s.byArrivalRelation[rel] = (s.byArrivalRelation[rel] || 0) + 1;
-        comp.forEach(function (r) {
-          var k = r || '不明';
-          s.byArrivalRelation[k] = (s.byArrivalRelation[k] || 0) + 1;
-        });
-        var counted = 1 + comp.length;
-        if (counted < n) s.byArrivalRelation[rel] += (n - counted);
-      } else {
-        s.byArrivalRelation[rel] = (s.byArrivalRelation[rel] || 0) + n;
-      }
+      comp.forEach(function (r) {
+        var k = r || '不明';
+        s.byArrivalCompanion[k] = (s.byArrivalCompanion[k] || 0) + 1;
+      });
+      // 同伴者の回答がない古い記録は「未回答」として残す（黙って本人に足さない）
+      var missing = n - 1 - comp.length;
+      if (missing > 0) s.byArrivalCompanion['未回答'] = (s.byArrivalCompanion['未回答'] || 0) + missing;
       s.arrivalGoodsQty += Number(c.goodsQty) || 0;
       s.arrivalGoodsAmount += Number(c.goodsAmount) || 0;
     });
@@ -1499,7 +1498,8 @@
     $('#dashGoodsAmt').textContent = yen(s.goodsAmount);
     $('#dashShipCnt').textContent = s.shipCount.toLocaleString('ja-JP');
 
-    renderDonut($('#arrivalDonut'), $('#arrivalDonutLegend'), s.byArrivalRelation, '人が来場');
+    renderDonut($('#arrivalSelfDonut'), $('#arrivalSelfLegend'), s.byArrivalSelf, '人が受付');
+    renderDonut($('#arrivalCompDonut'), $('#arrivalCompLegend'), s.byArrivalCompanion, '名が同伴');
     $('#dashTurnout').textContent = s.turnout === null ? '-' : s.turnout + '%';
     $('#dashAttended').textContent = s.attendedEntries + '/' + s.expectedEntries;
     $('#dashArrivalGoods').textContent = s.arrivalGoodsQty + '点';

@@ -449,10 +449,19 @@
 
           <div class="card">
             <h2>当日来場者の内訳</h2>
-            <p class="hint">受付で答えてもらった「部とのつながり」です。手動カウント分は含みません。</p>
-            <div class="donut-wrap mt">
-              <div class="donut" id="arrivalDonut"></div>
-              <div class="legend" id="arrivalDonutLegend"></div>
+            <p class="hint">たずねた質問がちがうので、受付した本人とご一緒の方を分けて集計しています。
+              手動カウント分は含みません。</p>
+
+            <div class="section-title">受付した人 ── 部とのつながり</div>
+            <div class="donut-wrap">
+              <div class="donut" id="arrivalSelfDonut"></div>
+              <div class="legend" id="arrivalSelfLegend"></div>
+            </div>
+
+            <div class="section-title">ご一緒の方 ── 受付した人との関係</div>
+            <div class="donut-wrap">
+              <div class="donut" id="arrivalCompDonut"></div>
+              <div class="legend" id="arrivalCompLegend"></div>
             </div>
             <div class="stat-grid mt">
               <div class="stat"><div class="n" id="dashTurnout">-</div><div class="l">エントリー者の来場率</div></div>
