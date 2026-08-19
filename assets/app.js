@@ -326,6 +326,7 @@
     var checkins = allCheckins();
     var s = {
       entryCount: entries.length,
+      cheerOnly: 0,          // 当日は来られないが応援を届けてくれた人
       onsitePeople: 0,
       goodsEntries: 0,
       goodsQty: 0,
@@ -340,6 +341,7 @@
     };
 
     entries.forEach(function (e) {
+      if (e.kind === 'cheer') s.cheerOnly++;
       if (e.kind === 'onsite' || e.kind === 'both') s.onsitePeople += Number(e.headcount) || 0;
       if (e.kind === 'goods' || e.kind === 'both') {
         s.goodsEntries++;
@@ -740,6 +742,11 @@
     $('#onsiteBlock').classList.toggle('hidden', !(k === 'onsite' || k === 'both'));
     $('#goodsBlock').classList.toggle('hidden', !(k === 'goods' || k === 'both'));
 
+    // 「行けないけれど応援」を選んだ人は、メッセージが唯一の届けものなので必須にする
+    $('#msgLabel').textContent = (k === 'cheer')
+      ? '応援メッセージ（必須・選手に届きます）'
+      : '応援メッセージ（任意・アプリに掲示されます）';
+
     // 「両方」のときは会場受取が既定、グッズだけなら配送が既定
     var wanted = (k === 'both') ? 'onsite' : 'ship';
     if (k === 'goods' || k === 'both') {
@@ -825,6 +832,9 @@
     if ((entryForm.kind === 'goods' || entryForm.kind === 'both') && t.sel.length === 0) {
       return showErr(errBox, 'グッズを1点以上えらんでください。（現地応援だけの場合は「当日 現地で応援する」を選んでね）');
     }
+    if (entryForm.kind === 'cheer' && !$('#fMessage').value.trim()) {
+      return showErr(errBox, '応援メッセージを入れてください。ひとことでも、そのまま選手に届きます。');
+    }
 
     var wantsOnsite = entryForm.kind === 'onsite' || entryForm.kind === 'both';
     var wantsGoods = entryForm.kind === 'goods' || entryForm.kind === 'both';
@@ -879,6 +889,9 @@
 
     Data.addEntry(record).then(function (res) {
       var parts = [];
+      if (record.kind === 'cheer') {
+        parts.push('応援メッセージ、たしかに受け取りました。選手みんなに届けます！');
+      }
       if (wantsOnsite) parts.push('当日は ' + record.headcount + ' 名でのご来場、お待ちしてます！');
       if (wantsGoods) {
         parts.push('グッズ ' + record.goodsQty + ' 点（' + yen(record.total) + '）で応援ありがとうございます。');
@@ -1591,6 +1604,7 @@
     $('#dashEntries').textContent = s.entryCount.toLocaleString('ja-JP');
     $('#dashOnsite').textContent = s.onsitePeople.toLocaleString('ja-JP');
     $('#dashGoodsCnt').textContent = s.goodsEntries.toLocaleString('ja-JP');
+    $('#dashCheer').textContent = s.cheerOnly.toLocaleString('ja-JP');
     $('#dashGoodsQty').textContent = s.goodsQty.toLocaleString('ja-JP');
     $('#dashGoodsAmt').textContent = yen(s.goodsAmount);
     // 配送を受け付けていない運用では、配送希望の欄は意味がないので出さない
@@ -1613,7 +1627,7 @@
     $('#countTotal').textContent = s.liveTotal.toLocaleString('ja-JP');
   }
 
-  var KIND_LABEL = { onsite: '現地', goods: 'グッズ', both: '現地＋グッズ' };
+  var KIND_LABEL = { onsite: '現地', goods: 'グッズ', both: '現地＋グッズ', cheer: 'メッセージ' };
   var DELIV_LABEL = { onsite: '会場受取', ship: '配送', '': '-' };
 
   function renderEntryTable() {

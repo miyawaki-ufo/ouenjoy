@@ -11,7 +11,7 @@
   ファイルを更新したのに古い画面が出るときは、この数字を全部そろえて増やしてください
   （ブラウザが前回のファイルを覚えてしまうのを防ぎます）。
 -->
-<link rel="stylesheet" href="assets/styles.css?v=13">
+<link rel="stylesheet" href="assets/styles.css?v=14">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥍</text></svg>">
 </head>
 <body>
@@ -153,6 +153,11 @@
               <div class="t">🏟＋🛍 現地に行って、グッズも買う</div>
               <div class="d">当日会場で部員から直接お渡しします（送料なし）</div>
             </label>
+            <label class="choice" data-kind="cheer">
+              <input type="radio" name="kind" value="cheer">
+              <div class="t">💌 当日は行けないけれど、応援を届ける</div>
+              <div class="d">遠くからでも大丈夫。メッセージが選手に届きます</div>
+            </label>
           </div>
         </div>
 
@@ -204,7 +209,7 @@
 
         <div class="card">
           <div class="field mb0">
-            <label for="fMessage">応援メッセージ（任意・アプリに掲示されます）</label>
+            <label for="fMessage"><span id="msgLabel">応援メッセージ（任意・アプリに掲示されます）</span></label>
             <textarea id="fMessage" maxlength="120" placeholder="例：はじめての公式戦、思いっきり楽しんで！"></textarea>
           </div>
         </div>
@@ -454,6 +459,7 @@
               <div class="stat"><div class="n" id="dashEntries">0</div><div class="l">エントリー件数</div></div>
               <div class="stat"><div class="n" id="dashOnsite">0</div><div class="l">現地応援 人数</div></div>
               <div class="stat"><div class="n" id="dashGoodsCnt">0</div><div class="l">グッズ応援 件数</div></div>
+              <div class="stat"><div class="n" id="dashCheer">0</div><div class="l">行けないけど応援</div></div>
             </div>
             <div class="stat-grid mt">
               <div class="stat"><div class="n" id="dashGoodsQty">0</div><div class="l">グッズ 点数</div></div>
@@ -711,9 +717,9 @@
 <!-- 印刷用（画面上は非表示、印刷時のみ出力） -->
 <div id="poster"></div>
 
-<script src="assets/config.js?v=13"></script>
-<script src="assets/qr.js?v=13"></script>
-<script src="assets/game.js?v=13"></script>
-<script src="assets/app.js?v=13"></script>
+<script src="assets/config.js?v=14"></script>
+<script src="assets/qr.js?v=14"></script>
+<script src="assets/game.js?v=14"></script>
+<script src="assets/app.js?v=14"></script>
 </body>
 </html>
