@@ -599,13 +599,20 @@
     }).join('');
   }
 
-  /** グッズ欄の＋−を有効にする。押されたら onChange を呼ぶ。 */
-  function bindGoodsStepper(listEl, qtyMap, onChange) {
+  /**
+   * グッズ欄の＋−を有効にする。押されたら onChange を呼ぶ。
+   *
+   * 数量の入れ物は getMap() で毎回取り直す。
+   * フォームをリセットすると入れ物ごと作り直されるため、
+   * ここで受け取った時点の参照を持ち続けると、古い入れ物を更新してしまう。
+   */
+  function bindGoodsStepper(listEl, getMap, onChange) {
     listEl.addEventListener('click', function (e) {
       var b = e.target.closest('[data-gstep]');
       if (!b) return;
       var row = b.closest('[data-goods]');
       var id = row.dataset.goods;
+      var qtyMap = getMap();
       var next = Math.max(0, Math.min(20, (qtyMap[id] || 0) + Number(b.dataset.gstep)));
       qtyMap[id] = next;
       $('[data-gqty]', row).textContent = next;
@@ -707,7 +714,7 @@
       }
     });
 
-    bindGoodsStepper($('#goodsList'), entryForm.qty, updateTotals);
+    bindGoodsStepper($('#goodsList'), function () { return entryForm.qty; }, updateTotals);
 
     $('#entryForm').addEventListener('submit', onEntrySubmit);
     $('#entryAgain').addEventListener('click', resetEntryForm);
@@ -1061,7 +1068,7 @@
       });
     });
 
-    bindGoodsStepper($('#checkinGoodsList'), checkinForm.qty, updateCheckinTotal);
+    bindGoodsStepper($('#checkinGoodsList'), function () { return checkinForm.qty; }, updateCheckinTotal);
 
     $('#checkinBtn').addEventListener('click', function () {
       var btn = this;
