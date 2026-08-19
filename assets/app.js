@@ -467,6 +467,14 @@
     if (view === 'entry') renderGoodsPicker();
   }
 
+  function bindMessages() {
+    $('#msgMoreBtn').addEventListener('click', function () {
+      showAllMessages = !showAllMessages;
+      renderMessages(summarize().messages);
+      if (!showAllMessages) $('#msgTitle').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }
+
   function bindNav() {
     document.addEventListener('click', function (e) {
       var t = e.target.closest('[data-go]');
@@ -629,12 +637,36 @@
 
     renderDonut($('#homeDonut'), $('#homeDonutLegend'), s.byRelation, '人がエントリー');
 
-    var msgs = s.messages.slice(0, 8);
-    $('#msgTitle').hidden = msgs.length === 0;
+    renderMessages(s.messages);
+  }
+
+  // 応援メッセージを一度に出す件数。「もっと見る」で全部読める。
+  var MSG_PREVIEW = 8;
+  var showAllMessages = false;
+
+  /**
+   * 応援メッセージの一覧。
+   * 届いたものは1件も捨てず、最初は新しい順に少しだけ出して、
+   * 「もっと見る」で全件ひらけるようにする。
+   */
+  function renderMessages(all) {
+    var msgs = showAllMessages ? all : all.slice(0, MSG_PREVIEW);
+    $('#msgTitle').hidden = all.length === 0;
     $('#msgList').innerHTML = msgs.map(function (m) {
       return '<div class="msg"><div class="who">' + esc(m.name || 'ななし') + ' さん</div>' +
         '<div class="tx">' + esc(m.message) + '</div></div>';
     }).join('');
+
+    var btn = $('#msgMoreBtn');
+    var hidden = all.length - MSG_PREVIEW;
+    if (hidden <= 0) {
+      btn.classList.add('hidden');
+      return;
+    }
+    btn.classList.remove('hidden');
+    btn.textContent = showAllMessages
+      ? '応援メッセージをとじる'
+      : '応援メッセージをすべて見る（あと ' + hidden + ' 件）';
   }
 
   /* ==================================================================== *
@@ -2070,6 +2102,7 @@
 
   function init() {
     bindNav();
+    bindMessages();
     bindEntry();
     bindCheckin();
     bindGame();
