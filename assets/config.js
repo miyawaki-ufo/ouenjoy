@@ -21,5 +21,5 @@
  * これをしないと、ブラウザが古いファイルを使い続けて設定が反映されません。
  */
 window.LWM_CONFIG = {
-  gasUrl: ''
+  gasUrl: 'https://script.google.com/macros/s/AKfycbwt8KWuFTzvWOvF7fcF-0m2JyLyk48XvETIglguTmZWwOYYujyRa0gYpXmT4NYBSDtowQ/exec'
 };
