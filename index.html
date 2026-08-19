@@ -291,6 +291,23 @@
             <span class="muted">人</span>
           </div>
         </div>
+
+        <div class="card hidden" id="companionCard">
+          <h2>ご一緒の方について<span class="req">必須</span></h2>
+          <p class="hint" id="companionQ"></p>
+          <div class="btn-row mt" id="companionAsk">
+            <button class="btn ghost sm" type="button" id="allSameBtn">はい、同じ</button>
+            <button class="btn ghost sm" type="button" id="mixedBtn">ちがう人がいる</button>
+          </div>
+          <div class="hidden" id="companionPicker">
+            <p class="hint" id="companionRemain"></p>
+            <div class="chips mt" id="companionChips"></div>
+            <div class="mt" id="companionChosen"></div>
+          </div>
+          <div class="notice ok hidden" id="companionSummary"></div>
+          <button class="btn ghost sm mt hidden" type="button" id="companionReset">選び直す</button>
+        </div>
+
         <div id="checkinError"></div>
         <button class="btn big-action" id="checkinBtn" type="button">
           来場しました！
@@ -514,7 +531,7 @@
             <div class="table-scroll">
               <table class="data" id="checkinTable">
                 <thead><tr>
-                  <th>時刻</th><th>お名前</th><th>つながり</th><th>応援</th>
+                  <th>時刻</th><th>お名前</th><th>つながり</th><th>同伴者</th><th>応援</th>
                   <th class="num">人数</th><th class="num">グッズ</th><th>事前</th>
                 </tr></thead>
                 <tbody></tbody>

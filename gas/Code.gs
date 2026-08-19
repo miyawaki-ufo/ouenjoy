@@ -48,7 +48,7 @@ function stripPrivate_(obj) {
   return obj;
 }
 var CHECKIN_HEADER = ['id', 'ts', 'count', 'source', 'device',
-  'name', 'relation', 'kind', 'goodsQty', 'goodsAmount', 'entryId', 'goodsJson'];
+  'name', 'relation', 'kind', 'goodsQty', 'goodsAmount', 'entryId', 'goodsJson', 'companions'];
 
 /* ------------------------------------------------------------------ *
  * 初期セットアップ
@@ -194,7 +194,8 @@ function readAll_() {
       goods: goods,
       goodsQty: Number(r.goodsQty) || 0,
       goodsAmount: Number(r.goodsAmount) || 0,
-      entryId: r.entryId
+      entryId: r.entryId,
+      companions: r.companions ? String(r.companions).split('、').filter(String) : []
     });
   });
 
@@ -283,7 +284,9 @@ function appendCheckin_(r) {
     Number(r.goodsQty) || 0,
     Number(r.goodsAmount) || 0,
     r.entryId || '',
-    JSON.stringify(r.goods || [])
+    JSON.stringify(r.goods || []),
+    // シート上で読めるように「、」区切りで保存する
+    (r.companions || []).join('、')
   ]);
   return { ok: true };
 }

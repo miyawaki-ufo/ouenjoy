@@ -372,8 +372,22 @@
       s.qrCount += n;
       if (c.name) s.namedArrivals++;
       if (c.entryId) attended[c.entryId] = true;
+
+      // 代表者1名＋同伴者それぞれを、その人の答えで数える。
+      // 同伴者の記録がない古いデータは、従来どおり全員を代表者の属性で数える。
       var rel = c.relation || '不明';
-      s.byArrivalRelation[rel] = (s.byArrivalRelation[rel] || 0) + n;
+      var comp = Array.isArray(c.companions) ? c.companions : [];
+      if (comp.length) {
+        s.byArrivalRelation[rel] = (s.byArrivalRelation[rel] || 0) + 1;
+        comp.forEach(function (r) {
+          var k = r || '不明';
+          s.byArrivalRelation[k] = (s.byArrivalRelation[k] || 0) + 1;
+        });
+        var counted = 1 + comp.length;
+        if (counted < n) s.byArrivalRelation[rel] += (n - counted);
+      } else {
+        s.byArrivalRelation[rel] = (s.byArrivalRelation[rel] || 0) + n;
+      }
       s.arrivalGoodsQty += Number(c.goodsQty) || 0;
       s.arrivalGoodsAmount += Number(c.goodsAmount) || 0;
     });
@@ -689,6 +703,8 @@
       } else if (target === 'checkinNum') {
         checkinCount = Math.max(1, Math.min(30, checkinCount + delta));
         $('#checkinNumNum').textContent = checkinCount;
+        resetCompanions();       // 人数が変わったら同伴者は選び直し
+        renderCompanions();
       }
     });
 
@@ -821,10 +837,91 @@
     writeLS(LS.checkedIn, { date: today, count: base + n });
   }
 
+  // 受付する本人にたずねる「部とのつながり」
   var RELATIONS = ['OG', '現役家族', '友人', '大学関係', '他大学', 'その他'];
 
+  // 同伴者にたずねる選択肢。
+  // 本人と同じ質問をしても答えにくいので、「連れてきた人から見た関係」で聞く。
+  var COMPANION_RELATIONS = ['子ども', '家族・パートナー', '友人', 'OG', '大学関係', '他大学', 'その他'];
+
   // 受付フォームの入力内容
-  var checkinForm = { relation: '', kind: '', qty: {}, useMyEntry: true };
+  // companionMode: '' 未回答 / 'same' 全員同じ / 'mixed' 個別に指定
+  var checkinForm = { relation: '', kind: '', qty: {}, useMyEntry: true, companionMode: '', companions: [] };
+
+  /** 受付する代表者の「つながり」。事前エントリー済みならその値を使う。 */
+  function repRelation() {
+    var me = myEntry();
+    return (me && checkinForm.useMyEntry) ? me.relation : checkinForm.relation;
+  }
+
+  function resetCompanions() {
+    checkinForm.companionMode = '';
+    checkinForm.companions = [];
+  }
+
+  /**
+   * 受付フォームを初期状態に戻す。
+   * 1台の端末で次々に受付することがあるため、前の人の入力が残らないようにする。
+   */
+  function resetCheckinForm() {
+    checkinCount = 1;
+    $('#checkinNumNum').textContent = '1';
+    checkinForm.relation = '';
+    checkinForm.kind = '';
+    checkinForm.qty = {};
+    resetCompanions();
+    $('#checkinName').value = '';
+    $$('input[name="ckind"]').forEach(function (i) { i.checked = false; });
+    markChoice($('#guestCard'));
+    $('#checkinError').innerHTML = '';
+    renderRelationChips();
+    renderCheckinGoods();
+    renderCompanions();
+  }
+
+  /** 同伴者の入力欄。2名以上のときだけ出す。 */
+  function renderCompanions() {
+    var need = checkinCount - 1;
+    var card = $('#companionCard');
+    if (need < 1) {
+      card.classList.add('hidden');
+      return;
+    }
+    card.classList.add('hidden');
+    var rep = repRelation();
+    if (!rep) return;              // 先に代表者のつながりを選んでもらう
+    card.classList.remove('hidden');
+
+    var mode = checkinForm.companionMode;
+    $('#companionQ').textContent = 'ご一緒の ' + need + ' 名は、あなたとどんな関係ですか？' +
+      '（' + need + ' 名とも「' + rep + '」の場合は「はい、同じ」）';
+    $('#companionAsk').classList.toggle('hidden', mode !== '');
+    $('#companionPicker').classList.toggle('hidden', mode !== 'mixed');
+    $('#companionSummary').classList.toggle('hidden', mode !== 'same' && !(mode === 'mixed' && checkinForm.companions.length >= need));
+    $('#companionReset').classList.toggle('hidden', mode === '');
+
+    if (mode === 'same') {
+      $('#companionSummary').textContent = 'ご一緒の ' + need + ' 名も「' + rep + '」として受け付けます。';
+      return;
+    }
+
+    if (mode === 'mixed') {
+      var remain = need - checkinForm.companions.length;
+      $('#companionRemain').textContent = remain > 0
+        ? 'あと ' + remain + ' 名ぶん、つながりを選んでください。'
+        : 'すべて選べました。';
+      $('#companionChips').innerHTML = COMPANION_RELATIONS.map(function (r) {
+        return '<button type="button" data-crel="' + esc(r) + '"' +
+          (remain <= 0 ? ' disabled style="opacity:.4"' : '') + '>' + esc(r) + '</button>';
+      }).join('');
+      $('#companionChosen').innerHTML = checkinForm.companions.length
+        ? checkinForm.companions.map(function (r) { return '<span class="badge lime" style="margin:0 6px 6px 0">' + esc(r) + '</span>'; }).join('')
+        : '';
+      if (remain <= 0) {
+        $('#companionSummary').textContent = 'ご一緒の ' + need + ' 名：' + checkinForm.companions.join('、') + ' として受け付けます。';
+      }
+    }
+  }
 
   /** この端末で事前エントリーした人の情報（あれば） */
   function myEntry() {
@@ -918,6 +1015,7 @@
 
     $('#notMeBtn').addEventListener('click', function () {
       checkinForm.useMyEntry = false;
+      resetCheckinForm();
       renderCheckinIdentity();
     });
 
@@ -925,7 +1023,34 @@
       var b = e.target.closest('[data-rel]');
       if (!b) return;
       checkinForm.relation = b.dataset.rel;
+      resetCompanions();          // 本人のつながりが変わったら同伴者も選び直し
       renderRelationChips();
+      renderCompanions();
+    });
+
+    $('#allSameBtn').addEventListener('click', function () {
+      checkinForm.companionMode = 'same';
+      checkinForm.companions = [];
+      renderCompanions();
+    });
+
+    $('#mixedBtn').addEventListener('click', function () {
+      checkinForm.companionMode = 'mixed';
+      checkinForm.companions = [];
+      renderCompanions();
+    });
+
+    $('#companionReset').addEventListener('click', function () {
+      resetCompanions();
+      renderCompanions();
+    });
+
+    $('#companionChips').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-crel]');
+      if (!b || b.disabled) return;
+      if (checkinForm.companions.length >= checkinCount - 1) return;
+      checkinForm.companions.push(b.dataset.crel);
+      renderCompanions();
     });
 
     $$('input[name="ckind"]').forEach(function (input) {
@@ -953,6 +1078,27 @@
         source: 'qr',
         device: deviceId()
       };
+
+      // 同伴者の内訳（2名以上のときだけ）
+      var need = checkinCount - 1;
+      var companions = [];
+      if (need > 0) {
+        var rep = repRelation();
+        if (!rep) return showErr(errBox, '先に、あなたと部のつながりを選んでください。');
+        if (!checkinForm.companionMode) {
+          return showErr(errBox, 'ご一緒の方について答えてください。全員あなたと同じなら「はい、同じ」を押してください。');
+        }
+        if (checkinForm.companionMode === 'same') {
+          for (var i = 0; i < need; i++) companions.push(rep);
+        } else {
+          if (checkinForm.companions.length < need) {
+            return showErr(errBox, 'ご一緒の方があと ' +
+              (need - checkinForm.companions.length) + ' 名ぶん選ばれていません。');
+          }
+          companions = checkinForm.companions.slice(0, need);
+        }
+      }
+      record.companions = companions;
 
       if (known) {
         record.entryId = me.id;
@@ -994,6 +1140,7 @@
         $('#checkinLive').textContent = s.liveTotal.toLocaleString('ja-JP');
         $('#checkinBefore').classList.add('hidden');
         $('#checkinAfter').classList.remove('hidden');
+        resetCheckinForm();     // 次の人のために入力を空にしておく
         window.scrollTo(0, 0);
       }).catch(function (e) {
         showErr(errBox, '受付できませんでした：' + (e.message || e));
@@ -1001,10 +1148,10 @@
     });
 
     $('#checkinMore').addEventListener('click', function () {
-      checkinCount = 1;
-      $('#checkinNumNum').textContent = '1';
+      resetCheckinForm();
       $('#checkinBefore').classList.remove('hidden');
       $('#checkinAfter').classList.add('hidden');
+      renderCheckinIdentity();
     });
   }
 
@@ -1399,6 +1546,7 @@
         '<td>' + esc(fmtTime(c.ts)) + '</td>' +
         '<td>' + esc(c.name || '（不明）') + '</td>' +
         '<td>' + esc(c.relation || '-') + '</td>' +
+        '<td>' + esc((c.companions || []).join('、') || '-') + '</td>' +
         '<td>' + esc(KIND_LABEL[c.kind] || '-') + '</td>' +
         '<td class="num">' + (c.count || 0) + '</td>' +
         '<td class="num">' + (c.goodsQty || 0) + '</td>' +
@@ -1445,13 +1593,13 @@
 
   function exportCheckinsCsv() {
     var goods = state.settings.goods || [];
-    var head = ['日時', 'お名前', 'つながり', '応援スタイル', '人数', 'グッズ点数', 'グッズ金額',
+    var head = ['日時', 'お名前', 'つながり', '同伴者の内訳', '応援スタイル', '人数', 'グッズ点数', 'グッズ金額',
       '事前エントリー', '記録方法', '集計対象', '端末']
       .concat(goods.map(function (g) { return g.name; }));
     var rows = allCheckins().map(function (c) {
       var map = {};
       (c.goods || []).forEach(function (g) { map[g.id] = g.qty; });
-      return [c.ts, c.name || '', c.relation || '', KIND_LABEL[c.kind] || '',
+      return [c.ts, c.name || '', c.relation || '', (c.companions || []).join('、'), KIND_LABEL[c.kind] || '',
         c.count, c.goodsQty || 0, c.goodsAmount || 0,
         c.entryId ? 'あり' : '', c.source === 'manual' ? '手動' : 'QR',
         isCountableCheckin(c) ? '対象' : '対象外', c.device || '']
