@@ -11,7 +11,7 @@
   ファイルを更新したのに古い画面が出るときは、この数字を全部そろえて増やしてください
   （ブラウザが前回のファイルを覚えてしまうのを防ぎます）。
 -->
-<link rel="stylesheet" href="assets/styles.css?v=14">
+<link rel="stylesheet" href="assets/styles.css?v=15">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥍</text></svg>">
 </head>
 <body>
@@ -454,6 +454,14 @@
           </div>
 
           <div class="card">
+            <h2>告知の効きぐあい</h2>
+            <p class="hint">アプリを開いた人が、エントリーまで進んだ割合です。
+              数字が動かないとき、原因が「届いていない」のか「入力されていない」のかを見分けられます。</p>
+            <div id="funnel" class="mt"></div>
+            <div id="funnelNote"></div>
+          </div>
+
+          <div class="card">
             <h2>事前エントリー見込み</h2>
             <div class="stat-grid">
               <div class="stat"><div class="n" id="dashEntries">0</div><div class="l">エントリー件数</div></div>
@@ -717,9 +725,9 @@
 <!-- 印刷用（画面上は非表示、印刷時のみ出力） -->
 <div id="poster"></div>
 
-<script src="assets/config.js?v=14"></script>
-<script src="assets/qr.js?v=14"></script>
-<script src="assets/game.js?v=14"></script>
-<script src="assets/app.js?v=14"></script>
+<script src="assets/config.js?v=15"></script>
+<script src="assets/qr.js?v=15"></script>
+<script src="assets/game.js?v=15"></script>
+<script src="assets/app.js?v=15"></script>
 </body>
 </html>

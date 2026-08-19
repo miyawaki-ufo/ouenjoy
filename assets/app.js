@@ -100,6 +100,15 @@
     if (!d) { d = uid(); writeLS(LS.device, d); }
     return d;
   }
+
+  /** 1回の訪問を表す識別子。タブを閉じると消える。 */
+  function sessionId() {
+    try {
+      var s = sessionStorage.getItem('lwm.session');
+      if (!s) { s = uid(); sessionStorage.setItem('lwm.session', s); }
+      return s;
+    } catch (e) { return ''; }
+  }
   function todayStr(d) {
     var t = d || new Date();
     return t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0');
@@ -196,6 +205,7 @@
         if (!res || res.ok !== true) throw new Error((res && res.error) || '読み込みに失敗しました');
         state.entries = res.entries || [];
         state.checkins = res.checkins || [];
+        state.views = res.views || null;
         if (res.settings && typeof res.settings === 'object') {
           // 共有設定を取り込む。ただし端末だけに置く項目は上書きしない。
           var keepLocal = {
@@ -266,6 +276,24 @@
         if (!remaining.length) state.lastError = '';
         refreshSyncBadge();
       });
+    },
+
+    /**
+     * 画面が開かれたことを記録する。
+     * 集客の手ごたえ（届いたか／入力まで進んだか）を見るためのもの。
+     * 失敗しても利用者には一切影響させない（投げっぱなしにする）。
+     */
+    logView: function (view) {
+      if (!isRemote()) return;
+      try {
+        var key = 'lwm.viewed.' + view;
+        if (sessionStorage.getItem(key)) return;   // 同じ訪問で二重に数えない
+        sessionStorage.setItem(key, '1');
+        gasPost({
+          action: 'view',
+          record: { ts: new Date().toISOString(), view: view, device: deviceId(), session: sessionId() }
+        }).catch(function () { /* 記録できなくても何もしない */ });
+      } catch (e) { /* sessionStorage が使えない環境でも動かす */ }
     },
 
     saveSettings: function (settings) {
@@ -427,6 +455,9 @@
       history.replaceState(null, '', '#/' + view);
     }
     if (!(opts && opts.keepScroll)) window.scrollTo(0, 0);
+
+    // スタッフ自身の操作は集客の数字に混ぜない
+    if (view !== 'staff') Data.logView(view);
 
     if (view === 'game') { Game.enter(); } else { Game.leave(); }
     if (view === 'home') renderHome();
@@ -1577,6 +1608,69 @@
     }).join('');
   }
 
+  /**
+   * 「開いた → エントリー画面まで来た → 送信した」の流れを表示する。
+   * どこで止まっているかが分かれば、打ち手が変わる。
+   */
+  function renderFunnel(s) {
+    var v = state.views;
+    var box = $('#funnel');
+    var note = $('#funnelNote');
+
+    if (!v) {
+      box.innerHTML = '<p class="hint mb0">まだ記録がありません。' +
+        '（この機能を入れる前のアクセスは数えられていません）</p>';
+      note.innerHTML = '';
+      return;
+    }
+
+    var opened = v.devices || 0;                                   // アプリを開いた端末数
+    var reached = (v.deviceByView && v.deviceByView.entry) || 0;   // エントリー画面まで来た端末数
+    var sent = s.entryCount;                                       // 実際に送信された件数
+
+    var steps = [
+      { label: 'アプリを開いた', n: opened, unit: '人' },
+      { label: 'エントリー画面を見た', n: reached, unit: '人' },
+      { label: 'エントリーを送信した', n: sent, unit: '件' }
+    ];
+    var max = Math.max(1, opened);
+
+    box.innerHTML = steps.map(function (st, i) {
+      var pct = Math.round(st.n / max * 100);
+      var rate = (i > 0 && steps[i - 1].n > 0)
+        ? '<span class="pc">前の段階の ' + Math.round(st.n / steps[i - 1].n * 100) + '%</span>' : '';
+      return '<div class="meter"><div class="row">' +
+        '<span class="name">' + esc(st.label) + '</span>' +
+        '<span class="val"><b>' + st.n + '</b> ' + st.unit + '</span></div>' +
+        '<div class="bar sky"><span style="width:' + Math.min(100, pct) + '%"></span></div>' +
+        (rate ? '<div class="goal-note">' + rate + '</div>' : '') +
+        '</div>';
+    }).join('');
+
+    // 数字の読み方を、そのまま打ち手に変換して伝える
+    var msg;
+    if (opened === 0) {
+      msg = '<div class="notice">まだ誰もアプリを開いていません。<strong>告知が届いていない可能性</strong>が高いです。' +
+        '送り先や送る時間帯を変えてみてください。</div>';
+    } else if (opened < 5) {
+      msg = '<div class="notice">開いた人がまだ少ないです。<strong>告知の量を増やす段階</strong>です。' +
+        'SNSや別のグループにも広げてみてください。</div>';
+    } else if (reached === 0) {
+      msg = '<div class="notice">アプリは見られていますが、<strong>エントリー画面まで進んでいません</strong>。' +
+        '告知文に、エントリーのリンクを直接（末尾が <code>#/entry</code> のもの）貼ってみてください。</div>';
+    } else if (sent === 0) {
+      msg = '<div class="notice err">エントリー画面までは来ているのに、<strong>送信されていません</strong>。' +
+        '入力項目が多い、または途中でつまずいている可能性があります。実際に自分で入力して確かめてください。</div>';
+    } else if (reached > 0 && sent / reached < 0.3) {
+      msg = '<div class="notice">見た人のうち、送信まで進んだのは ' + Math.round(sent / reached * 100) + '% です。' +
+        '見に来てはいるので、<strong>あと一押しの文言</strong>が効くかもしれません。</div>';
+    } else {
+      msg = '<div class="notice ok">見た人がしっかりエントリーまで進んでいます。' +
+        '<strong>あとは見てくれる人を増やすほど伸びます。</strong></div>';
+    }
+    note.innerHTML = msg;
+  }
+
   function renderDashboard() {
     var s = summarize();
     $('#dashLive').textContent = s.liveTotal.toLocaleString('ja-JP');
@@ -1611,6 +1705,7 @@
     $('#dashShipCnt').textContent = s.shipCount.toLocaleString('ja-JP');
     $('#dashShipCnt').closest('.stat').classList.toggle('hidden', !shippingEnabled() && s.shipCount === 0);
 
+    renderFunnel(s);
     renderDonut($('#arrivalSelfDonut'), $('#arrivalSelfLegend'), s.byArrivalSelf, '人が受付');
     renderDonut($('#arrivalCompDonut'), $('#arrivalCompLegend'), s.byArrivalCompanion, '名が同伴');
     $('#dashTurnout').textContent = s.turnout === null ? '-' : s.turnout + '%';

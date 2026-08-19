@@ -26,6 +26,10 @@ var ADMIN_KEY = '';
 var SHEET_ENTRIES = 'entries';
 var SHEET_CHECKINS = 'checkins';
 var SHEET_CONFIG = 'config';
+var SHEET_VIEWS = 'views';
+
+// 画面の閲覧記録。個人を特定する情報は持たず、端末の識別子のみを記録する。
+var VIEW_HEADER = ['ts', 'view', 'device', 'session'];
 
 var ENTRY_HEADER = [
   'id', 'ts', 'name', 'relation', 'kind', 'headcount',
@@ -64,6 +68,7 @@ function ensureSheets_() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   ensureSheet_(ss, SHEET_ENTRIES, ENTRY_HEADER);
   ensureSheet_(ss, SHEET_CHECKINS, CHECKIN_HEADER);
+  ensureSheet_(ss, SHEET_VIEWS, VIEW_HEADER);
   var cfg = ss.getSheetByName(SHEET_CONFIG);
   if (!cfg) {
     cfg = ss.insertSheet(SHEET_CONFIG);
@@ -127,6 +132,7 @@ function doPost(e) {
 
     if (action === 'entry') return json_(appendEntry_(record));
     if (action === 'checkin') return json_(appendCheckin_(record));
+    if (action === 'view') return json_(appendView_(record));
     if (action === 'settings') {
       if (ADMIN_KEY && body.key !== ADMIN_KEY) {
         return json_({ ok: false, error: '設定用の合言葉が違います。スタッフ→設定の「設定用の合言葉」を確認してください。' });
@@ -205,7 +211,13 @@ function readAll_() {
     try { settings = JSON.parse(raw); } catch (ignore) {}
   }
 
-  return { ok: true, entries: entries, checkins: checkins, settings: settings };
+  return {
+    ok: true,
+    entries: entries,
+    checkins: checkins,
+    settings: settings,
+    views: viewStats_(ss.getSheetByName(SHEET_VIEWS))
+  };
 }
 
 function rows_(sheet, header) {
@@ -289,6 +301,48 @@ function appendCheckin_(r) {
     (r.companions || []).join('、')
   ]);
   return { ok: true };
+}
+
+function appendView_(r) {
+  var ss = ensureSheets_();
+  ss.getSheetByName(SHEET_VIEWS).appendRow([
+    r.ts || new Date().toISOString(),
+    r.view || '',
+    r.device || '',
+    r.session || ''
+  ]);
+  return { ok: true };
+}
+
+/**
+ * 閲覧記録を集計して返す。行そのものは返さない（件数が多くなるため）。
+ * 「開いた人」＝端末数、「見られた回数」＝記録の件数。
+ */
+function viewStats_(sheet) {
+  var last = sheet.getLastRow();
+  var out = { total: 0, byView: {}, devices: 0, deviceByView: {} };
+  if (last < 2) return out;
+
+  var rows = sheet.getRange(2, 1, last - 1, VIEW_HEADER.length).getValues();
+  var allDevices = {};
+  rows.forEach(function (row) {
+    var view = String(row[1] || '');
+    var device = String(row[2] || '');
+    if (!view) return;
+    out.total++;
+    out.byView[view] = (out.byView[view] || 0) + 1;
+    if (device) {
+      allDevices[device] = true;
+      if (!out.deviceByView[view]) out.deviceByView[view] = {};
+      out.deviceByView[view][device] = true;
+    }
+  });
+  out.devices = Object.keys(allDevices).length;
+  // 端末数だけを残す（一覧は返さない）
+  Object.keys(out.deviceByView).forEach(function (v) {
+    out.deviceByView[v] = Object.keys(out.deviceByView[v]).length;
+  });
+  return out;
 }
 
 function saveSettings_(settings) {
