@@ -187,6 +187,43 @@ a { color: var(--navy-700); }
 .bar.coral span { background: linear-gradient(90deg, #f0503f, var(--coral)); }
 .bar.sky span { background: linear-gradient(90deg, #1c8ec0, var(--sky)); }
 
+.goal-note { font-size: 12px; color: var(--ink-soft); font-weight: 700; margin-top: 5px; }
+.goal-note .badge { margin-right: 6px; }
+
+/* 目標を達成したバー */
+.bar.is-done span,
+.bar.coral.is-done span,
+.bar.sky.is-done span {
+  background: linear-gradient(90deg, #e8a90c, var(--gold) 60%, #fff3cf);
+  box-shadow: 0 0 12px rgba(255, 201, 77, .8);
+}
+.badge.gold { background: var(--gold); color: #5a3d00; }
+
+/* 達成したときのお祝い表示（一度きり） */
+.celebrate {
+  position: fixed; inset: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(11, 22, 51, .45);
+  animation: celeFade .3s ease;
+}
+.celebrate[hidden] { display: none; }
+.celebrate-inner {
+  background: #fff; border-radius: 22px; padding: 28px 26px; text-align: center;
+  box-shadow: 0 20px 50px rgba(11, 22, 51, .3); max-width: 300px;
+  animation: celePop .45s cubic-bezier(.2, 1.3, .4, 1);
+}
+.celebrate-emoji { font-size: 56px; line-height: 1; animation: celeBounce 1s ease infinite; }
+.celebrate-text { font-size: 17px; font-weight: 800; margin-top: 10px; line-height: 1.5; }
+
+@keyframes celeFade { from { opacity: 0; } }
+@keyframes celePop { from { transform: scale(.75); opacity: 0; } }
+@keyframes celeBounce { 50% { transform: translateY(-8px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .celebrate, .celebrate-inner, .celebrate-emoji { animation: none; }
+  .bar span { transition: none; }
+}
+
 .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 .stat {
   background: var(--paper); border-radius: var(--radius-sm); padding: 12px 10px; text-align: center;

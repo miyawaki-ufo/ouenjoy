@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="utf-8">
@@ -11,7 +11,7 @@
   ファイルを更新したのに古い画面が出るときは、この数字を全部そろえて増やしてください
   （ブラウザが前回のファイルを覚えてしまうのを防ぎます）。
 -->
-<link rel="stylesheet" href="assets/styles.css?v=7">
+<link rel="stylesheet" href="assets/styles.css?v=8">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥍</text></svg>">
 </head>
 <body>
@@ -26,6 +26,13 @@
     <button class="sync-dot" id="syncDot" data-state="local" type="button">オフライン保存</button>
   </div>
 </header>
+
+<div id="celebrate" class="celebrate" hidden>
+  <div class="celebrate-inner">
+    <div class="celebrate-emoji">🎉</div>
+    <div class="celebrate-text" id="celebrateText"></div>
+  </div>
+</div>
 
 <main id="views">
 
@@ -57,6 +64,7 @@
             <span class="val"><b id="mOnsite">0</b> 人</span>
           </div>
           <div class="bar"><span id="bOnsite" style="width:0%"></span></div>
+          <div class="goal-note" id="nOnsite"></div>
         </div>
 
         <div class="meter">
@@ -65,6 +73,7 @@
             <span class="val"><b id="mGoodsQty">0</b> 点</span>
           </div>
           <div class="bar coral"><span id="bGoods" style="width:0%"></span></div>
+          <div class="goal-note" id="nGoods"></div>
         </div>
 
         <div class="stat-grid mt">
@@ -687,9 +696,9 @@
 <!-- 印刷用（画面上は非表示、印刷時のみ出力） -->
 <div id="poster"></div>
 
-<script src="assets/config.js?v=7"></script>
-<script src="assets/qr.js?v=7"></script>
-<script src="assets/game.js?v=7"></script>
-<script src="assets/app.js?v=7"></script>
+<script src="assets/config.js?v=8"></script>
+<script src="assets/qr.js?v=8"></script>
+<script src="assets/game.js?v=8"></script>
+<script src="assets/app.js?v=8"></script>
 </body>
 </html>

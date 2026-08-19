@@ -59,7 +59,8 @@
     checkedIn: 'lwm.checkedIn',
     best: 'lwm.gameBest',
     staff: 'lwm.staffOpen',
-    myEntry: 'lwm.myEntry'
+    myEntry: 'lwm.myEntry',
+    celebrated: 'lwm.celebrated'
   };
 
   /* ==================================================================== *
@@ -280,7 +281,8 @@
 
     /** 端末に残っているテスト用データを消す（共有シート側は消さない） */
     clearLocal: function () {
-      [LS.entries, LS.checkins, LS.pending, LS.checkedIn, LS.best].forEach(function (k) {
+      [LS.entries, LS.checkins, LS.pending, LS.checkedIn, LS.best,
+       LS.myEntry, LS.celebrated].forEach(function (k) {
         try { localStorage.removeItem(k); } catch (e) { /* 無視 */ }
       });
       state.pending = [];
@@ -522,6 +524,45 @@
     return localDateOf(c.ts) === d;
   }
 
+  /**
+   * 目標に対する進み具合を描く。
+   * 未達なら「あと◯」で背中を押し、達成したらバーを金色にしてバッジを出す。
+   */
+  function renderGoal(key, barEl, noteEl, current, goal, unit, label) {
+    goal = Math.max(1, Number(goal) || 1);
+    var pct = current / goal * 100;
+    var done = current >= goal;
+
+    barEl.style.width = Math.min(100, pct) + '%';
+    barEl.parentNode.classList.toggle('is-done', done);
+
+    if (done) {
+      noteEl.innerHTML = '<span class="badge gold">🎉 目標達成！</span>目標 ' +
+        goal.toLocaleString('ja-JP') + unit + ' に対して ' + Math.round(pct) + '%';
+      maybeCelebrate(key, label, goal, unit);
+    } else {
+      var left = goal - current;
+      noteEl.textContent = '目標 ' + goal.toLocaleString('ja-JP') + unit +
+        ' まで あと ' + left.toLocaleString('ja-JP') + unit;
+    }
+  }
+
+  /** 達成のお祝いは、その端末で一度だけ出す（毎回出るとうるさいため） */
+  function maybeCelebrate(key, label, goal, unit) {
+    var seen = readLS(LS.celebrated, {});
+    if (seen[key]) return;
+    seen[key] = true;
+    writeLS(LS.celebrated, seen);
+
+    $('#celebrateText').innerHTML = esc(label) + 'が<br>目標の ' +
+      goal.toLocaleString('ja-JP') + unit + ' に届きました！<br>応援ありがとうございます 🎉';
+    var box = $('#celebrate');
+    box.hidden = false;
+    var close = function () { box.hidden = true; box.removeEventListener('click', close); };
+    box.addEventListener('click', close);
+    setTimeout(close, 5000);
+  }
+
   function renderHome() {
     renderHero();
     applyCopy();
@@ -538,9 +579,9 @@
     }
 
     $('#mOnsite').textContent = s.onsitePeople.toLocaleString('ja-JP');
-    $('#bOnsite').style.width = Math.min(100, (s.onsitePeople / Math.max(1, set.goalOnsite)) * 100) + '%';
     $('#mGoodsQty').textContent = s.goodsQty.toLocaleString('ja-JP');
-    $('#bGoods').style.width = Math.min(100, (s.goodsQty / Math.max(1, set.goalGoods)) * 100) + '%';
+    renderGoal('onsite', $('#bOnsite'), $('#nOnsite'), s.onsitePeople, set.goalOnsite, '人', '現地応援');
+    renderGoal('goods', $('#bGoods'), $('#nGoods'), s.goodsQty, set.goalGoods, '点', 'グッズ応援');
 
     // 金額は一般向けの画面には出さない（スタッフ画面にのみ表示）
     $('#sEntries').textContent = s.entryCount.toLocaleString('ja-JP');
