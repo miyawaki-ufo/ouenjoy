@@ -11,7 +11,7 @@
   ファイルを更新したのに古い画面が出るときは、この数字を全部そろえて増やしてください
   （ブラウザが前回のファイルを覚えてしまうのを防ぎます）。
 -->
-<link rel="stylesheet" href="assets/styles.css?v=16">
+<link rel="stylesheet" href="assets/styles.css?v=17">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥍</text></svg>">
 </head>
 <body>
@@ -657,7 +657,11 @@
               <div class="note">実在の方のお名前にならないよう気をつけてください。</div>
             </div>
             <div class="field"><label for="cCopyEntry">エントリー画面の案内文</label><textarea id="cCopyEntry" style="min-height:70px"></textarea></div>
-            <div class="field mb0"><label for="cCopyCheckin">チェックイン画面の案内文</label><textarea id="cCopyCheckin" style="min-height:70px"></textarea></div>
+            <div class="field"><label for="cCopyCheckin">チェックイン画面の案内文</label><textarea id="cCopyCheckin" style="min-height:70px"></textarea></div>
+            <div class="field mb0"><label for="cCopyBefore">試合当日より前に受付を開いた人へのことば</label>
+              <textarea id="cCopyBefore" style="min-height:70px"></textarea>
+              <div class="note">「試合まであと◯日。」は自動で付きます。その続きの文章です。</div>
+            </div>
           </div>
 
           <div class="card">
@@ -726,9 +730,9 @@
 <!-- 印刷用（画面上は非表示、印刷時のみ出力） -->
 <div id="poster"></div>
 
-<script src="assets/config.js?v=16"></script>
-<script src="assets/qr.js?v=16"></script>
-<script src="assets/game.js?v=16"></script>
-<script src="assets/app.js?v=16"></script>
+<script src="assets/config.js?v=17"></script>
+<script src="assets/qr.js?v=17"></script>
+<script src="assets/game.js?v=17"></script>
+<script src="assets/app.js?v=17"></script>
 </body>
 </html>

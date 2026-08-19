@@ -40,6 +40,7 @@
     copyNameExample: '例：リロ',
     copyEntryLead: '当日の来場人数とグッズの購入見込みを事前に把握したいので、ぜひご協力ください！',
     copyCheckinLead: '会場に着いたらタップしてください。来場者数のカウントに使わせていただきます。',
+    copyBeforeMsg: 'のぞいてくださってありがとうございます。当日、会場でお待ちしています🥍',
 
     introLead: 'はじめまして、ラクロス部です',
     introBody: '【ここは設定画面から自由に書き換えてください】\n\n部の雰囲気、今シーズンの目標、この試合にかける想いなどを書くと、はじめて来てくれる人にも伝わりやすくなります。',
@@ -1147,8 +1148,9 @@
         var days = Math.round((new Date(d + 'T00:00:00') - new Date(todayStr() + 'T00:00:00')) / 86400000);
         $('#lockEmoji').textContent = '🗓';
         $('#lockTitle').textContent = '受付は試合当日にオープンします';
-        $('#lockMsg').textContent = '試合まであと ' + days + ' 日です。当日、会場に着いてからこの画面を開いてください。' +
-          'いまのうちに応援エントリーをしておくと、部員の準備がとても助かります。';
+        // 日数だけ自動で出し、あとの文章は設定から自由に変えられるようにする
+        $('#lockMsg').textContent = '試合まであと ' + days + ' 日。' +
+          (state.settings.copyBeforeMsg || DEFAULT_SETTINGS.copyBeforeMsg);
       } else {
         $('#lockEmoji').textContent = '🙌';
         $('#lockTitle').textContent = '受付は終了しました';
@@ -1956,6 +1958,7 @@
     $('#cCopyNameEx').value = s.copyNameExample || '';
     $('#cCopyEntry').value = s.copyEntryLead || '';
     $('#cCopyCheckin').value = s.copyCheckinLead || '';
+    $('#cCopyBefore').value = s.copyBeforeMsg || '';
     $('#cIntroLead').value = s.introLead || '';
     $('#cIntroBody').value = s.introBody || '';
     $('#cIntroFacts').value = s.introFacts || '';
@@ -2010,6 +2013,7 @@
       copyNameExample: $('#cCopyNameEx').value.trim(),
       copyEntryLead: $('#cCopyEntry').value.trim(),
       copyCheckinLead: $('#cCopyCheckin').value.trim(),
+      copyBeforeMsg: $('#cCopyBefore').value.trim(),
       introLead: $('#cIntroLead').value,
       introBody: $('#cIntroBody').value,
       introFacts: $('#cIntroFacts').value,
