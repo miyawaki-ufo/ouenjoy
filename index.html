@@ -234,6 +234,54 @@
       </div>
 
       <div id="checkinBefore">
+        <div class="card hidden" id="knownCard">
+          <h2>おかえりなさい！</h2>
+          <div class="known-who">
+            <div class="nm" id="knownName"></div>
+            <div class="rel badge lime" id="knownRel"></div>
+          </div>
+          <p class="hint mt">この内容で受付します。ちがう場合は下から切り替えてください。</p>
+          <button class="btn ghost sm mt" type="button" id="notMeBtn">別の人として受付する</button>
+        </div>
+
+        <div id="guestCard">
+          <div class="card">
+            <div class="field mb0">
+              <label for="checkinName">お名前（ニックネームでもOK）<span class="req">必須</span></label>
+              <input type="text" id="checkinName" maxlength="40" autocomplete="name">
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>あなたと部のつながり<span class="req">必須</span></h2>
+            <div class="chips" id="checkinRelation"></div>
+          </div>
+
+          <div class="card">
+            <h2>今日の応援スタイル<span class="req">必須</span></h2>
+            <div class="choices">
+              <label class="choice" data-ckind="onsite">
+                <input type="radio" name="ckind" value="onsite">
+                <div class="t">🏟 現地で応援</div>
+                <div class="d">声援で盛り上げます</div>
+              </label>
+              <label class="choice" data-ckind="both">
+                <input type="radio" name="ckind" value="both">
+                <div class="t">🏟＋🛍 現地で応援＋グッズ購入</div>
+                <div class="d">会場で部員から受け取ります（送料なし）</div>
+              </label>
+            </div>
+          </div>
+
+          <div class="card hidden" id="checkinGoodsCard">
+            <h2>買いたいグッズ</h2>
+            <div id="checkinGoodsList"></div>
+            <div class="total-box">
+              <div class="grand"><span>会場でのお支払い</span><b id="cTotal">¥0</b></div>
+            </div>
+          </div>
+        </div>
+
         <div class="card">
           <h2>一緒に来た人数（自分を含む）</h2>
           <div class="stepper mt">
@@ -383,6 +431,20 @@
           </div>
 
           <div class="card">
+            <h2>当日来場者の内訳</h2>
+            <p class="hint">受付で答えてもらった「部とのつながり」です。手動カウント分は含みません。</p>
+            <div class="donut-wrap mt">
+              <div class="donut" id="arrivalDonut"></div>
+              <div class="legend" id="arrivalDonutLegend"></div>
+            </div>
+            <div class="stat-grid mt">
+              <div class="stat"><div class="n" id="dashTurnout">-</div><div class="l">エントリー者の来場率</div></div>
+              <div class="stat"><div class="n" id="dashAttended">0</div><div class="l">来場を確認できた人</div></div>
+              <div class="stat"><div class="n" id="dashArrivalGoods">0</div><div class="l">当日その場でのグッズ希望</div></div>
+            </div>
+          </div>
+
+          <div class="card">
             <h2>グッズ内訳（見込み）</h2>
             <div id="dashGoodsBreak"></div>
           </div>
@@ -443,8 +505,22 @@
               スプレッドシートの <code>entries</code> シートの <code>email</code> 列から行ってください。</div>
             <div class="btn-row mt">
               <button class="btn ghost sm" type="button" id="csvEntries">エントリーCSV</button>
-              <button class="btn ghost sm" type="button" id="csvCheckins">チェックインCSV</button>
+              <button class="btn ghost sm" type="button" id="csvCheckins">受付CSV</button>
             </div>
+          </div>
+
+          <div class="card">
+            <h2>当日の受付一覧</h2>
+            <div class="table-scroll">
+              <table class="data" id="checkinTable">
+                <thead><tr>
+                  <th>時刻</th><th>お名前</th><th>つながり</th><th>応援</th>
+                  <th class="num">人数</th><th class="num">グッズ</th><th>事前</th>
+                </tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+            <p class="hint mt" id="checkinListNote"></p>
           </div>
         </div>
 

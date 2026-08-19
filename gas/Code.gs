@@ -47,7 +47,8 @@ function stripPrivate_(obj) {
   for (var i = 0; i < PRIVATE_FIELDS.length; i++) delete obj[PRIVATE_FIELDS[i]];
   return obj;
 }
-var CHECKIN_HEADER = ['id', 'ts', 'count', 'source', 'device'];
+var CHECKIN_HEADER = ['id', 'ts', 'count', 'source', 'device',
+  'name', 'relation', 'kind', 'goodsQty', 'goodsAmount', 'entryId', 'goodsJson'];
 
 /* ------------------------------------------------------------------ *
  * 初期セットアップ
@@ -177,13 +178,24 @@ function readAll_() {
   });
 
   var checkins = rows_(ss.getSheetByName(SHEET_CHECKINS), CHECKIN_HEADER).map(function (r) {
-    return {
+    var goods = [];
+    if (r.goodsJson) {
+      try { goods = JSON.parse(r.goodsJson); } catch (ignore) {}
+    }
+    return stripPrivate_({
       id: r.id,
       ts: toIso_(r.ts),
       count: Number(r.count) || 0,
       source: r.source,
-      device: r.device
-    };
+      device: r.device,
+      name: r.name,
+      relation: r.relation,
+      kind: r.kind,
+      goods: goods,
+      goodsQty: Number(r.goodsQty) || 0,
+      goodsAmount: Number(r.goodsAmount) || 0,
+      entryId: r.entryId
+    });
   });
 
   var settings = null;
@@ -264,7 +276,14 @@ function appendCheckin_(r) {
     r.ts || new Date().toISOString(),
     Number(r.count) || 0,
     r.source || 'qr',
-    r.device || ''
+    r.device || '',
+    r.name || '',
+    r.relation || '',
+    r.kind || '',
+    Number(r.goodsQty) || 0,
+    Number(r.goodsAmount) || 0,
+    r.entryId || '',
+    JSON.stringify(r.goods || [])
   ]);
   return { ok: true };
 }

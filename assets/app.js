@@ -58,7 +58,8 @@
     device: 'lwm.device',
     checkedIn: 'lwm.checkedIn',
     best: 'lwm.gameBest',
-    staff: 'lwm.staffOpen'
+    staff: 'lwm.staffOpen',
+    myEntry: 'lwm.myEntry'
   };
 
   /* ==================================================================== *
@@ -352,6 +353,12 @@
 
     s.offDayCount = 0;
     s.offDayRecords = 0;
+    s.byArrivalRelation = {};   // 当日来場者の属性内訳
+    s.arrivalGoodsQty = 0;      // 当日その場でのグッズ購入希望
+    s.arrivalGoodsAmount = 0;
+    s.namedArrivals = 0;        // 名前まで分かっている受付の件数
+    var attended = {};          // 来場が確認できた事前エントリーのID
+
     checkins.forEach(function (c) {
       var n = Number(c.count) || 0;
       if (!isCountableCheckin(c)) {
@@ -360,9 +367,23 @@
         s.offDayRecords++;
         return;
       }
-      if (c.source === 'manual') s.manualCount += n; else s.qrCount += n;
+      if (c.source === 'manual') { s.manualCount += n; return; }
+
+      s.qrCount += n;
+      if (c.name) s.namedArrivals++;
+      if (c.entryId) attended[c.entryId] = true;
+      var rel = c.relation || '不明';
+      s.byArrivalRelation[rel] = (s.byArrivalRelation[rel] || 0) + n;
+      s.arrivalGoodsQty += Number(c.goodsQty) || 0;
+      s.arrivalGoodsAmount += Number(c.goodsAmount) || 0;
     });
     s.liveTotal = s.qrCount + s.manualCount;
+
+    // 事前に「現地に行く」と答えた人のうち、実際に来場が確認できた割合
+    var expected = entries.filter(function (e) { return e.kind === 'onsite' || e.kind === 'both'; });
+    s.expectedEntries = expected.length;
+    s.attendedEntries = expected.filter(function (e) { return attended[e.id]; }).length;
+    s.turnout = expected.length ? Math.round(s.attendedEntries / expected.length * 100) : null;
 
     s.messages.sort(function (a, b) { return new Date(b.ts) - new Date(a.ts); });
     return s;
@@ -541,36 +562,60 @@
     });
   }
 
-  function renderGoodsPicker() {
-    var list = $('#goodsList');
-    var goods = (state.settings.goods || []).filter(function (g) { return g.name && Number(g.price) >= 0; });
-    if (!goods.length) {
-      list.innerHTML = '<p class="hint">グッズはまだ登録されていません。スタッフページの設定から追加できます。</p>';
-    } else {
-      list.innerHTML = goods.map(function (g) {
-        var q = entryForm.qty[g.id] || 0;
-        return '<div class="goods-item" data-goods="' + esc(g.id) + '">' +
-          '<div class="info"><div class="nm">' + esc(g.name) + '</div>' +
-          '<div class="pr">' + yen(g.price) + '</div></div>' +
-          '<div class="stepper">' +
-          '<button type="button" data-gstep="-1" aria-label="減らす">−</button>' +
-          '<span class="num" data-gqty>' + q + '</span>' +
-          '<button type="button" data-gstep="1" aria-label="増やす">＋</button>' +
-          '</div></div>';
-      }).join('');
-    }
-    $('#shipNote').textContent = '＋' + yen(state.settings.shipping);
-    updateTotals();
+  function activeGoods() {
+    return (state.settings.goods || []).filter(function (g) { return g.name && Number(g.price) >= 0; });
   }
 
-  function goodsSelection() {
+  /** グッズの選択欄を描く。エントリー画面と受付画面で共用する。 */
+  function renderGoodsInto(listEl, qtyMap) {
+    var goods = activeGoods();
+    if (!goods.length) {
+      listEl.innerHTML = '<p class="hint">グッズはまだ登録されていません。スタッフページの設定から追加できます。</p>';
+      return;
+    }
+    listEl.innerHTML = goods.map(function (g) {
+      var q = qtyMap[g.id] || 0;
+      return '<div class="goods-item" data-goods="' + esc(g.id) + '">' +
+        '<div class="info"><div class="nm">' + esc(g.name) + '</div>' +
+        '<div class="pr">' + yen(g.price) + '</div></div>' +
+        '<div class="stepper">' +
+        '<button type="button" data-gstep="-1" aria-label="減らす">−</button>' +
+        '<span class="num" data-gqty>' + q + '</span>' +
+        '<button type="button" data-gstep="1" aria-label="増やす">＋</button>' +
+        '</div></div>';
+    }).join('');
+  }
+
+  /** グッズ欄の＋−を有効にする。押されたら onChange を呼ぶ。 */
+  function bindGoodsStepper(listEl, qtyMap, onChange) {
+    listEl.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-gstep]');
+      if (!b) return;
+      var row = b.closest('[data-goods]');
+      var id = row.dataset.goods;
+      var next = Math.max(0, Math.min(20, (qtyMap[id] || 0) + Number(b.dataset.gstep)));
+      qtyMap[id] = next;
+      $('[data-gqty]', row).textContent = next;
+      onChange();
+    });
+  }
+
+  function selectionFrom(qtyMap) {
     var out = [];
-    (state.settings.goods || []).forEach(function (g) {
-      var q = entryForm.qty[g.id] || 0;
+    activeGoods().forEach(function (g) {
+      var q = qtyMap[g.id] || 0;
       if (q > 0) out.push({ id: g.id, name: g.name, price: Number(g.price) || 0, qty: q });
     });
     return out;
   }
+
+  function renderGoodsPicker() {
+    renderGoodsInto($('#goodsList'), entryForm.qty);
+    $('#shipNote').textContent = '＋' + yen(state.settings.shipping);
+    updateTotals();
+  }
+
+  function goodsSelection() { return selectionFrom(entryForm.qty); }
 
   /** 配送になる組み合わせかどうか（＝メールアドレスが必要かどうか） */
   function needsDelivery() {
@@ -647,17 +692,7 @@
       }
     });
 
-    // グッズ数量
-    $('#goodsList').addEventListener('click', function (e) {
-      var b = e.target.closest('[data-gstep]');
-      if (!b) return;
-      var row = b.closest('[data-goods]');
-      var id = row.dataset.goods;
-      var next = Math.max(0, Math.min(20, (entryForm.qty[id] || 0) + Number(b.dataset.gstep)));
-      entryForm.qty[id] = next;
-      $('[data-gqty]', row).textContent = next;
-      updateTotals();
-    });
+    bindGoodsStepper($('#goodsList'), entryForm.qty, updateTotals);
 
     $('#entryForm').addEventListener('submit', onEntrySubmit);
     $('#entryAgain').addEventListener('click', resetEntryForm);
@@ -729,6 +764,12 @@
     btn.disabled = true;
     btn.textContent = '送信中…';
 
+    // 当日の受付でこの端末を自動判別できるよう、エントリー内容を覚えておく
+    writeLS(LS.myEntry, {
+      id: record.id, name: record.name, relation: record.relation,
+      kind: record.kind, headcount: record.headcount
+    });
+
     Data.addEntry(record).then(function (res) {
       var parts = [];
       if (wantsOnsite) parts.push('当日は ' + record.headcount + ' 名でのご来場、お待ちしてます！');
@@ -780,6 +821,51 @@
     writeLS(LS.checkedIn, { date: today, count: base + n });
   }
 
+  var RELATIONS = ['OG', '現役家族', '友人', '大学関係', '他大学', 'その他'];
+
+  // 受付フォームの入力内容
+  var checkinForm = { relation: '', kind: '', qty: {}, useMyEntry: true };
+
+  /** この端末で事前エントリーした人の情報（あれば） */
+  function myEntry() {
+    var m = readLS(LS.myEntry, null);
+    return (m && m.id) ? m : null;
+  }
+
+  function renderCheckinGoods() {
+    renderGoodsInto($('#checkinGoodsList'), checkinForm.qty);
+    updateCheckinTotal();
+  }
+
+  function updateCheckinTotal() {
+    var sel = selectionFrom(checkinForm.qty);
+    $('#cTotal').textContent = yen(sel.reduce(function (a, g) { return a + g.price * g.qty; }, 0));
+    $('#checkinGoodsCard').classList.toggle('hidden', checkinForm.kind !== 'both');
+  }
+
+  function renderRelationChips() {
+    $('#checkinRelation').innerHTML = RELATIONS.map(function (r) {
+      return '<button type="button" data-rel="' + esc(r) + '"' +
+        (checkinForm.relation === r ? ' class="is-on"' : '') + '>' + esc(r) + '</button>';
+    }).join('');
+  }
+
+  /** 事前エントリー済みの端末か、飛び入りかで入力欄を切り替える */
+  function renderCheckinIdentity() {
+    var me = myEntry();
+    var known = !!me && checkinForm.useMyEntry;
+    $('#knownCard').classList.toggle('hidden', !known);
+    $('#guestCard').classList.toggle('hidden', known);
+
+    if (known) {
+      $('#knownName').textContent = me.name + ' さん';
+      $('#knownRel').textContent = me.relation + '／' + (KIND_LABEL[me.kind] || me.kind);
+    } else {
+      renderRelationChips();
+      updateCheckinTotal();
+    }
+  }
+
   /** 受付画面の表示を、試合日との関係で切り替える */
   function renderCheckin() {
     var phase = eventDayState();
@@ -820,6 +906,7 @@
     } else {
       $('#checkinBefore').classList.remove('hidden');
       $('#checkinAfter').classList.add('hidden');
+      renderCheckinIdentity();
     }
   }
 
@@ -829,12 +916,36 @@
       renderCheckin();
     });
 
+    $('#notMeBtn').addEventListener('click', function () {
+      checkinForm.useMyEntry = false;
+      renderCheckinIdentity();
+    });
+
+    $('#checkinRelation').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-rel]');
+      if (!b) return;
+      checkinForm.relation = b.dataset.rel;
+      renderRelationChips();
+    });
+
+    $$('input[name="ckind"]').forEach(function (input) {
+      input.addEventListener('change', function () {
+        checkinForm.kind = input.value;
+        markChoice($('#guestCard'));
+        if (input.value === 'both') renderCheckinGoods();
+        updateCheckinTotal();
+      });
+    });
+
+    bindGoodsStepper($('#checkinGoodsList'), checkinForm.qty, updateCheckinTotal);
+
     $('#checkinBtn').addEventListener('click', function () {
       var btn = this;
       var errBox = $('#checkinError');
       errBox.innerHTML = '';
-      btn.disabled = true;
 
+      var me = myEntry();
+      var known = !!me && checkinForm.useMyEntry;
       var record = {
         id: uid(),
         ts: new Date().toISOString(),
@@ -843,10 +954,40 @@
         device: deviceId()
       };
 
+      if (known) {
+        record.entryId = me.id;
+        record.name = me.name;
+        record.relation = me.relation;
+        record.kind = me.kind;
+        record.goods = [];
+        record.goodsQty = 0;
+        record.goodsAmount = 0;
+      } else {
+        var nm = $('#checkinName').value.trim();
+        if (!nm) return showErr(errBox, 'お名前を入れてください。ニックネームでもかまいません。');
+        if (!checkinForm.relation) return showErr(errBox, '部とのつながりを選んでください。');
+        if (!checkinForm.kind) return showErr(errBox, '今日の応援スタイルを選んでください。');
+        var sel = checkinForm.kind === 'both' ? selectionFrom(checkinForm.qty) : [];
+        if (checkinForm.kind === 'both' && !sel.length) {
+          return showErr(errBox, 'グッズを1点以上えらんでください。（買わない場合は「現地で応援」を選んでね）');
+        }
+        record.entryId = '';
+        record.name = nm;
+        record.relation = checkinForm.relation;
+        record.kind = checkinForm.kind;
+        record.goods = sel;
+        record.goodsQty = sel.reduce(function (a, g) { return a + g.qty; }, 0);
+        record.goodsAmount = sel.reduce(function (a, g) { return a + g.price * g.qty; }, 0);
+      }
+
+      btn.disabled = true;
+
       Data.addCheckin(record).then(function (res) {
         rememberCheckin(checkinCount);
         var s = summarize();
-        $('#checkinDoneMsg').textContent = checkinCount + ' 名で受付しました。' +
+        var extra = record.goodsQty
+          ? 'グッズ ' + record.goodsQty + ' 点は会場で部員からお渡しします。' : '';
+        $('#checkinDoneMsg').textContent = record.name + ' さん、' + checkinCount + ' 名で受付しました。' + extra +
           (checkinTestMode ? '（テストモードのため、当日の集計には含まれません）'
             : res.offline ? '（電波が弱いため端末に保存。つながり次第、自動送信されます）'
             : 'たくさんの応援ありがとうございます！');
@@ -1211,6 +1352,11 @@
     $('#dashGoodsAmt').textContent = yen(s.goodsAmount);
     $('#dashShipCnt').textContent = s.shipCount.toLocaleString('ja-JP');
 
+    renderDonut($('#arrivalDonut'), $('#arrivalDonutLegend'), s.byArrivalRelation, '人が来場');
+    $('#dashTurnout').textContent = s.turnout === null ? '-' : s.turnout + '%';
+    $('#dashAttended').textContent = s.attendedEntries + '/' + s.expectedEntries;
+    $('#dashArrivalGoods').textContent = s.arrivalGoodsQty + '点';
+
     $('#dashGoodsBreak').innerHTML = bars(s.byGoods, 'coral');
     renderDonut($('#dashDonut'), $('#dashDonutLegend'), s.byRelation, '人がエントリー');
   }
@@ -1240,6 +1386,30 @@
         '</tr>';
     }).join('');
     $('#listEmptyNote').textContent = entries.length ? '合計 ' + entries.length + ' 件' : 'まだエントリーがありません。';
+    renderCheckinTable();
+  }
+
+  function renderCheckinTable() {
+    var rows = allCheckins()
+      .filter(function (c) { return c.source !== 'manual' && isCountableCheckin(c); })
+      .sort(function (a, b) { return new Date(b.ts) - new Date(a.ts); });
+
+    $('#checkinTable tbody').innerHTML = rows.map(function (c) {
+      return '<tr>' +
+        '<td>' + esc(fmtTime(c.ts)) + '</td>' +
+        '<td>' + esc(c.name || '（不明）') + '</td>' +
+        '<td>' + esc(c.relation || '-') + '</td>' +
+        '<td>' + esc(KIND_LABEL[c.kind] || '-') + '</td>' +
+        '<td class="num">' + (c.count || 0) + '</td>' +
+        '<td class="num">' + (c.goodsQty || 0) + '</td>' +
+        '<td>' + (c.entryId ? '<span class="badge lime">あり</span>' : '<span class="badge">当日</span>') + '</td>' +
+        '</tr>';
+    }).join('');
+
+    var total = rows.reduce(function (a, c) { return a + (Number(c.count) || 0); }, 0);
+    $('#checkinListNote').textContent = rows.length
+      ? rows.length + ' 件 / ' + total + ' 名（手動カウント分は含みません）'
+      : 'まだ受付がありません。';
   }
 
   function downloadFile(filename, text, mime) {
@@ -1274,9 +1444,18 @@
   }
 
   function exportCheckinsCsv() {
-    var head = ['日時', '人数', '種別', '端末'];
+    var goods = state.settings.goods || [];
+    var head = ['日時', 'お名前', 'つながり', '応援スタイル', '人数', 'グッズ点数', 'グッズ金額',
+      '事前エントリー', '記録方法', '集計対象', '端末']
+      .concat(goods.map(function (g) { return g.name; }));
     var rows = allCheckins().map(function (c) {
-      return [c.ts, c.count, c.source === 'manual' ? '手動' : 'QR', c.device || ''];
+      var map = {};
+      (c.goods || []).forEach(function (g) { map[g.id] = g.qty; });
+      return [c.ts, c.name || '', c.relation || '', KIND_LABEL[c.kind] || '',
+        c.count, c.goodsQty || 0, c.goodsAmount || 0,
+        c.entryId ? 'あり' : '', c.source === 'manual' ? '手動' : 'QR',
+        isCountableCheckin(c) ? '対象' : '対象外', c.device || '']
+        .concat(goods.map(function (g) { return map[g.id] || 0; }));
     });
     var csv = [head].concat(rows).map(function (r) { return r.map(csvCell).join(','); }).join('\r\n');
     downloadFile('チェックイン記録_' + todayStr() + '.csv', csv);
