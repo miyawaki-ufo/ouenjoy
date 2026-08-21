@@ -11,7 +11,7 @@
   ファイルを更新したのに古い画面が出るときは、この数字を全部そろえて増やしてください
   （ブラウザが前回のファイルを覚えてしまうのを防ぎます）。
 -->
-<link rel="stylesheet" href="assets/styles.css?v=17">
+<link rel="stylesheet" href="assets/styles.css?v=18">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥍</text></svg>">
 </head>
 <body>
@@ -210,7 +210,8 @@
 
         <div class="card">
           <div class="field mb0">
-            <label for="fMessage"><span id="msgLabel">応援メッセージ（任意・アプリに掲示されます）</span></label>
+            <label for="fMessage"><span id="msgLabel">応援メッセージ（任意）</span></label>
+            <div class="notice" id="msgNote">⚠️ 入力すると、<strong>お名前と一緒にアプリのホーム画面に公開されます。</strong><br>公開したくない場合は、空のままでも送信できます。</div>
             <textarea id="fMessage" maxlength="120" placeholder="例：はじめての公式戦、思いっきり楽しんで！"></textarea>
           </div>
         </div>
@@ -730,9 +731,9 @@
 <!-- 印刷用（画面上は非表示、印刷時のみ出力） -->
 <div id="poster"></div>
 
-<script src="assets/config.js?v=17"></script>
-<script src="assets/qr.js?v=17"></script>
-<script src="assets/game.js?v=17"></script>
-<script src="assets/app.js?v=17"></script>
+<script src="assets/config.js?v=18"></script>
+<script src="assets/qr.js?v=18"></script>
+<script src="assets/game.js?v=18"></script>
+<script src="assets/app.js?v=18"></script>
 </body>
 </html>

@@ -807,9 +807,14 @@
     $('#goodsBlock').classList.toggle('hidden', !(k === 'goods' || k === 'both'));
 
     // 「行けないけれど応援」を選んだ人は、メッセージが唯一の届けものなので必須にする
-    $('#msgLabel').textContent = (k === 'cheer')
-      ? '応援メッセージ（必須・選手に届きます）'
-      : '応援メッセージ（任意・アプリに掲示されます）';
+    var cheerOnly = (k === 'cheer');
+    $('#msgLabel').innerHTML = cheerOnly
+      ? '応援メッセージ<span class="req">必須</span>'
+      : '応援メッセージ（任意）';
+
+    // 公開されることが読み飛ばされないよう、入力欄の直前にはっきり出す
+    $('#msgNote').innerHTML = '⚠️ 入力すると、<strong>お名前と一緒にアプリのホーム画面に公開されます。</strong>' +
+      (cheerOnly ? '' : '<br>公開したくない場合は、空のままでも送信できます。');
 
     // 「両方」のときは会場受取が既定、グッズだけなら配送が既定
     var wanted = (k === 'both') ? 'onsite' : 'ship';
